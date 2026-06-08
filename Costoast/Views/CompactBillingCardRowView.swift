@@ -11,7 +11,7 @@ struct CompactBillingCardRowView: View {
     let card: BillingCard
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: 10) {
             logoView
 
             Text(card.name)
@@ -32,13 +32,13 @@ struct CompactBillingCardRowView: View {
                 .multilineTextAlignment(.trailing)
         }
         .font(.body)
-        .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(.background, in: RoundedRectangle(cornerRadius: 8))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(.quaternary, lineWidth: 1)
+        .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.primary.opacity(0.12))
+                .frame(height: 1)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("compact-billing-card-row-\(card.id.uuidString)")
@@ -58,7 +58,7 @@ struct CompactBillingCardRowView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .frame(width: 32, height: 32)
+        .frame(width: 28, height: 28)
         .accessibilityHidden(true)
     }
 
@@ -76,52 +76,6 @@ struct CompactBillingCardRowView: View {
         }
 
         return "( \(BillingCardFormat.money(originalAmount)) )"
-    }
-}
-
-struct CompactAddBillingCardRowView: View {
-    var action: () -> Void
-
-    @State private var isHovered = false
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.secondary)
-
-                Text("Add Card")
-                    .font(.headline)
-            }
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(backgroundColor, in: RoundedRectangle(cornerRadius: 8))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(.quaternary.opacity(isHovered ? 1 : 0.65), lineWidth: 1)
-            }
-        }
-        .buttonStyle(CompactAddBillingCardButtonStyle(isHovered: isHovered))
-        .accessibilityLabel("Add Card")
-        .help("Add Card")
-        .onHover { isHovered = $0 }
-    }
-
-    private var backgroundColor: Color {
-        isHovered ? Color.primary.opacity(0.05) : Color.primary.opacity(0.025)
-    }
-}
-
-private struct CompactAddBillingCardButtonStyle: ButtonStyle {
-    var isHovered: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.99 : 1)
-            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
-            .animation(.easeOut(duration: 0.12), value: isHovered)
     }
 }
 
@@ -153,8 +107,6 @@ private struct CompactAddBillingCardButtonStyle: ButtonStyle {
                 updatedAt: Date()
             )
         )
-
-        CompactAddBillingCardRowView {}
     }
     .padding()
     .frame(width: 800)

@@ -191,13 +191,9 @@ struct DashboardView: View {
 
     @ViewBuilder
     private var compactCardList: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(sortedCards) { card in
                 CompactBillingCardRowView(card: card)
-            }
-
-            CompactAddBillingCardRowView {
-                presentAddForm()
             }
         }
     }
