@@ -10,6 +10,7 @@ import SwiftUI
 struct BillingCardFormView: View {
     private let card: BillingCard?
     private let displayOrder: Int
+    private let credentialStore: CredentialStore
     private let onSave: (BillingCard) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -22,10 +23,22 @@ struct BillingCardFormView: View {
     @State private var amountText: String
     @State private var billingCycle: BillingCycle
     @State private var billingStartDayText: String
+    @State private var apiKey: String = ""
+    @State private var organizationID: String = ""
+    @State private var awsAccessKeyID: String = ""
+    @State private var awsSecretAccessKey: String = ""
+    @State private var awsRegion: String = "us-east-1"
+    @State private var credentialError: String?
 
-    init(card: BillingCard?, displayOrder: Int, onSave: @escaping (BillingCard) -> Void) {
+    init(
+        card: BillingCard?,
+        displayOrder: Int,
+        credentialStore: CredentialStore = CredentialStore(),
+        onSave: @escaping (BillingCard) -> Void
+    ) {
         self.card = card
         self.displayOrder = displayOrder
+        self.credentialStore = credentialStore
         self.onSave = onSave
 
         _name = State(initialValue: card?.name ?? "")
@@ -81,15 +94,16 @@ struct BillingCardFormView: View {
 
                 TextField("Billing Start Day", text: $billingStartDayText)
 
-                Text("API credentials will be added in a later phase.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                credentialFields
             }
 
-            if !validationMessages.isEmpty {
+            if !validationMessages.isEmpty || credentialError != nil {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(validationMessages, id: \.self) { message in
                         Text(message)
+                    }
+                    if let credentialError {
+                        Text(credentialError)
                     }
                 }
                 .font(.callout)
@@ -109,7 +123,30 @@ struct BillingCardFormView: View {
             }
         }
         .padding(24)
-        .frame(width: 460)
+        .frame(width: 520)
+        .onAppear(perform: loadCredentials)
+    }
+
+    @ViewBuilder
+    private var credentialFields: some View {
+        if sourceType == .apiUsage && service == .openAiApi {
+            Section("OpenAI API Credentials") {
+                SecureField("API Key", text: $apiKey)
+                TextField("Organization ID", text: $organizationID)
+                Text("Used to fetch OpenAI API usage and cost data.\nStored securely in macOS Keychain.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        } else if sourceType == .apiUsage && service == .aws {
+            Section("AWS Credentials") {
+                TextField("Access Key ID", text: $awsAccessKeyID)
+                SecureField("Secret Access Key", text: $awsSecretAccessKey)
+                TextField("Region", text: $awsRegion)
+                Text("Used to fetch AWS cost data from Cost Explorer.\nStored securely in macOS Keychain.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     private var validationMessages: [String] {
@@ -194,15 +231,80 @@ struct BillingCardFormView: View {
             amount: savesAmountDetails ? parsedAmount : nil,
             billingCycle: savesAmountDetails ? billingCycle : .monthly,
             billingStartDay: parsedBillingStartDay,
+            lastBillingResult: card?.lastBillingResult,
+            lastRefreshError: card?.lastRefreshError,
             createdAt: card?.createdAt ?? now,
             updatedAt: now
         )
 
+        do {
+            try saveCredentials(for: billingCard)
+            credentialError = nil
+        } catch {
+            credentialError = error.localizedDescription
+            return
+        }
+
         onSave(billingCard)
         dismiss()
+    }
+
+    private func loadCredentials() {
+        guard let card else {
+            return
+        }
+
+        do {
+            guard let credentials = try credentialStore.loadCredentials(for: card.id) else {
+                return
+            }
+
+            apiKey = credentials.apiKey ?? ""
+            organizationID = credentials.organizationID ?? ""
+            awsAccessKeyID = credentials.awsAccessKeyID ?? ""
+            awsSecretAccessKey = credentials.awsSecretAccessKey ?? ""
+            awsRegion = credentials.awsRegion ?? "us-east-1"
+            credentialError = nil
+        } catch {
+            credentialError = error.localizedDescription
+        }
+    }
+
+    private func saveCredentials(for card: BillingCard) throws {
+        if sourceType == .apiUsage && service == .openAiApi {
+            try credentialStore.saveCredentials(
+                BillingCredentials(
+                    apiKey: apiKey.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    organizationID: organizationID.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    awsAccessKeyID: nil,
+                    awsSecretAccessKey: nil,
+                    awsRegion: nil
+                ),
+                for: card.id
+            )
+        } else if sourceType == .apiUsage && service == .aws {
+            try credentialStore.saveCredentials(
+                BillingCredentials(
+                    apiKey: nil,
+                    organizationID: nil,
+                    awsAccessKeyID: awsAccessKeyID.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    awsSecretAccessKey: awsSecretAccessKey.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    awsRegion: awsRegion.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "us-east-1"
+                ),
+                for: card.id
+            )
+        } else {
+            try credentialStore.deleteCredentials(for: card.id)
+        }
     }
 }
 
 #Preview {
     BillingCardFormView(card: nil, displayOrder: 0) { _ in }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
+    }
 }

@@ -9,6 +9,8 @@ import SwiftUI
 
 struct BillingCardRowView: View {
     let card: BillingCard
+    let isRefreshing: Bool
+    let onRefresh: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
 
@@ -21,6 +23,8 @@ struct BillingCardRowView: View {
                 Spacer()
 
                 HStack(spacing: 8) {
+                    Button(isRefreshing ? "Loading..." : "Refresh", action: onRefresh)
+                        .disabled(isRefreshing)
                     Button("Edit", action: onEdit)
                     Button("Delete", role: .destructive, action: onDelete)
                 }
@@ -47,8 +51,7 @@ struct BillingCardRowView: View {
                     Text("Billing Start Day: \(billingStartDay)")
                 }
 
-                Text("Billing data is not connected yet.")
-                    .foregroundStyle(.secondary)
+                providerStateView
             }
             .font(.body)
         }
@@ -61,6 +64,57 @@ struct BillingCardRowView: View {
         }
     }
 
+    @ViewBuilder
+    private var providerStateView: some View {
+        if isRefreshing {
+            Text("Loading...")
+                .foregroundStyle(.secondary)
+        } else if let error = card.lastRefreshError {
+            Text("Failed to fetch billing data.")
+                .foregroundStyle(.red)
+            Text(error)
+                .foregroundStyle(.red)
+        } else if let result = card.lastBillingResult {
+            resultView(result)
+        } else if let amount = card.amount, card.sourceType == .manualAmount || card.sourceType == .subscriptionPlan {
+            Text("Original: \(card.currency.rawValue) \(BillingCardFormat.decimal(amount))")
+        } else if card.sourceType == .apiUsage {
+            Text("Not configured")
+                .foregroundStyle(.secondary)
+        } else {
+            Text("Billing data is not connected yet.")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private func resultView(_ result: BillingProviderResult) -> some View {
+        if let periodStart = result.periodStart, let periodEnd = result.periodEnd {
+            Text("Period: \(Self.dateOnlyFormatter.string(from: periodStart)) - \(Self.dateOnlyFormatter.string(from: periodEnd))")
+        }
+
+        if let originalAmount = result.originalAmount {
+            Text("Original: \(originalAmount.currency.rawValue) \(BillingCardFormat.decimal(originalAmount.value))")
+        } else {
+            Text(result.message ?? "Amount unavailable.")
+                .foregroundStyle(.secondary)
+        }
+
+        Text("Updated: \(Self.dateTimeFormatter.string(from: result.fetchedAt))")
+            .foregroundStyle(.secondary)
+    }
+
+    private static let dateOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
+    private static let dateTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm z"
+        return formatter
+    }()
 }
 
 #Preview {
@@ -76,9 +130,13 @@ struct BillingCardRowView: View {
             amount: nil,
             billingCycle: .monthly,
             billingStartDay: nil,
+            lastBillingResult: nil,
+            lastRefreshError: nil,
             createdAt: Date(),
             updatedAt: Date()
         ),
+        isRefreshing: false,
+        onRefresh: {},
         onEdit: {},
         onDelete: {}
     )

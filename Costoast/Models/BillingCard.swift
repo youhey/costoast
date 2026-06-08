@@ -20,6 +20,9 @@ struct BillingCard: Identifiable, Codable, Equatable {
     var billingCycle: BillingCycle
     var billingStartDay: Int?
 
+    var lastBillingResult: BillingProviderResult?
+    var lastRefreshError: String?
+
     var createdAt: Date
     var updatedAt: Date
 }
@@ -129,10 +132,50 @@ enum CurrencyCode: String, Codable, CaseIterable, Identifiable {
     case eur = "EUR"
 
     var id: String { rawValue }
+
+    nonisolated init?(externalValue: String) {
+        self.init(rawValue: externalValue.uppercased())
+    }
 }
 
 enum BillingCardFormat {
     nonisolated static func decimal(_ decimal: Decimal) -> String {
         NSDecimalNumber(decimal: decimal).stringValue
     }
+}
+
+struct Money: Codable, Equatable {
+    var value: Decimal
+    var currency: CurrencyCode
+}
+
+struct BillingProviderResult: Codable, Equatable {
+    var periodStart: Date?
+    var periodEnd: Date?
+    var nextBillingDate: Date?
+
+    var originalAmount: Money?
+    var amountKind: BillingAmountKind
+
+    var fetchedAt: Date
+    var dataFreshness: BillingDataFreshness
+    var message: String?
+}
+
+enum BillingAmountKind: String, Codable {
+    case estimated
+    case finalized
+    case subscription
+    case manual
+    case usageToDate
+    case unavailable
+}
+
+enum BillingDataFreshness: String, Codable {
+    case realtime
+    case hourly
+    case daily
+    case delayed
+    case manual
+    case unknown
 }

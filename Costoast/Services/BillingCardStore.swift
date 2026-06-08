@@ -14,11 +14,13 @@ final class BillingCardStore: ObservableObject {
 
     private let storageKey = "billingCards"
     private let userDefaults: UserDefaults
+    private let credentialStore: CredentialStore
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
 
-    init(userDefaults: UserDefaults = .standard) {
+    init(userDefaults: UserDefaults = .standard, credentialStore: CredentialStore = CredentialStore()) {
         self.userDefaults = userDefaults
+        self.credentialStore = credentialStore
         load()
     }
 
@@ -62,6 +64,37 @@ final class BillingCardStore: ObservableObject {
     func delete(_ card: BillingCard) {
         cards.removeAll { $0.id == card.id }
         cards = normalized(cards)
+        let credentialErrorMessage: String?
+        do {
+            try credentialStore.deleteCredentials(for: card.id)
+            credentialErrorMessage = nil
+        } catch {
+            credentialErrorMessage = "Billing card was deleted, but credentials could not be removed."
+        }
+        save()
+        if let credentialErrorMessage {
+            storageError = credentialErrorMessage
+        }
+    }
+
+    func updateBillingResult(_ result: BillingProviderResult, for cardID: UUID) {
+        guard let index = cards.firstIndex(where: { $0.id == cardID }) else {
+            return
+        }
+
+        cards[index].lastBillingResult = result
+        cards[index].lastRefreshError = nil
+        cards[index].updatedAt = Date()
+        save()
+    }
+
+    func updateBillingError(_ errorMessage: String, for cardID: UUID) {
+        guard let index = cards.firstIndex(where: { $0.id == cardID }) else {
+            return
+        }
+
+        cards[index].lastRefreshError = errorMessage
+        cards[index].updatedAt = Date()
         save()
     }
 

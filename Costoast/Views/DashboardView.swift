@@ -9,10 +9,21 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct DashboardView: View {
-    @StateObject private var store = BillingCardStore()
+    private let credentialStore: CredentialStore
+    private let providerRegistry: BillingProviderRegistry
+
+    @StateObject private var store: BillingCardStore
     @State private var formPresentation: BillingCardFormPresentation?
     @State private var cardPendingDeletion: BillingCard?
     @State private var draggedCard: BillingCard?
+    @State private var refreshingCardIDs: Set<UUID> = []
+
+    init() {
+        let credentialStore = CredentialStore()
+        self.credentialStore = credentialStore
+        self.providerRegistry = BillingProviderRegistry()
+        _store = StateObject(wrappedValue: BillingCardStore(credentialStore: credentialStore))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
@@ -41,6 +52,10 @@ struct DashboardView: View {
                         ForEach(store.cards) { card in
                             BillingCardRowView(
                                 card: card,
+                                isRefreshing: refreshingCardIDs.contains(card.id),
+                                onRefresh: {
+                                    refresh(card)
+                                },
                                 onEdit: {
                                     presentEditForm(for: card)
                                 },
@@ -73,7 +88,7 @@ struct DashboardView: View {
         .padding(32)
         .frame(minWidth: 640, idealWidth: 800, maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
         .sheet(item: $formPresentation) { presentation in
-            BillingCardFormView(card: presentation.card, displayOrder: store.cards.count) { card in
+            BillingCardFormView(card: presentation.card, displayOrder: store.cards.count, credentialStore: credentialStore) { card in
                 if presentation.card == nil {
                     store.add(card)
                 } else {
@@ -111,6 +126,27 @@ struct DashboardView: View {
 
     private func presentEditForm(for card: BillingCard) {
         formPresentation = BillingCardFormPresentation(card: card)
+    }
+
+    private func refresh(_ card: BillingCard) {
+        refreshingCardIDs.insert(card.id)
+
+        Task {
+            do {
+                let credentials = try credentialStore.loadCredentials(for: card.id)
+                let provider = providerRegistry.provider(for: card)
+                let result = try await provider.fetchBilling(for: card, credentials: credentials)
+                await MainActor.run {
+                    store.updateBillingResult(result, for: card.id)
+                    refreshingCardIDs.remove(card.id)
+                }
+            } catch {
+                await MainActor.run {
+                    store.updateBillingError(error.localizedDescription, for: card.id)
+                    refreshingCardIDs.remove(card.id)
+                }
+            }
+        }
     }
 }
 
