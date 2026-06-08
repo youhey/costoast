@@ -24,6 +24,7 @@ struct DashboardView: View {
     @State private var isRefreshAllHovered = false
     @State private var isSaveOrderHovered = false
     @State private var isAddHovered = false
+    @State private var hoveredReorderCardID: UUID?
 
     init(userDefaults: UserDefaults = CostoastUserDefaults.current) {
         let credentialStore = CredentialStore()
@@ -194,6 +195,9 @@ struct DashboardView: View {
         if preferences.sortMode == .custom {
             row
                 .contentShape(Rectangle())
+                .onHover { isHovered in
+                    hoveredReorderCardID = isHovered ? card.id : nil
+                }
                 .background {
                     BillingCardReorderDropTarget(cardID: card.id) { sourceCardID in
                         moveCard(sourceCardID, to: card)
@@ -207,10 +211,18 @@ struct DashboardView: View {
         }
     }
 
+    @ViewBuilder
     private func dragHandle(for card: BillingCard) -> some View {
-        BillingCardReorderDragHandle(cardID: card.id, serviceName: card.service.displayName)
-            .frame(width: 26, height: 38)
-            .padding(.leading, 10)
+        if shouldShowDragHandle(for: card) {
+            BillingCardReorderDragHandle(cardID: card.id, serviceName: card.service.displayName)
+                .frame(width: 26, height: 38)
+                .padding(.leading, 10)
+                .transition(.opacity)
+        }
+    }
+
+    private func shouldShowDragHandle(for card: BillingCard) -> Bool {
+        hoveredReorderCardID == card.id || ProcessInfo.processInfo.environment["COSTOAST_UI_TEST_SEED_REORDER"] == "1"
     }
 
     private func moveCard(_ sourceCardID: UUID, to targetCard: BillingCard) {
