@@ -190,7 +190,7 @@ struct BillingCardRowView: View {
 
 }
 
-private extension BillingService {
+extension BillingService {
     enum ServiceIcon {
         case asset(String)
         case symbol(String)

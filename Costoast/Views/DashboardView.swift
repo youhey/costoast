@@ -58,14 +58,10 @@ struct DashboardView: View {
                         EmptyDashboardView {
                             presentAddForm()
                         }
+                    } else if preferences.viewMode == .compact {
+                        compactCardList
                     } else {
-                        ForEach(sortedCards) { card in
-                            billingCardRow(for: card)
-                        }
-
-                        AddBillingCardView(subtitle: nil) {
-                            presentAddForm()
-                        }
+                        billingCardList
                     }
                 }
                 .padding(.bottom, 2)
@@ -87,6 +83,17 @@ struct DashboardView: View {
                     .pickerStyle(.menu)
                     .frame(width: 136)
                     .help(sortModeHelpText)
+                    .disabled(store.cards.isEmpty)
+
+                    Picker("View", selection: viewModeBinding) {
+                        ForEach(DashboardViewMode.allCases) { viewMode in
+                            Text(viewMode.displayName)
+                                .tag(viewMode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 152)
+                    .help("Switch dashboard view.")
                     .disabled(store.cards.isEmpty)
 
                     if preferences.sortMode != .custom {
@@ -162,6 +169,37 @@ struct DashboardView: View {
             get: { preferences.sortMode },
             set: { setSortMode($0) }
         )
+    }
+
+    private var viewModeBinding: Binding<DashboardViewMode> {
+        Binding(
+            get: { preferences.viewMode },
+            set: { setViewMode($0) }
+        )
+    }
+
+    @ViewBuilder
+    private var billingCardList: some View {
+        ForEach(sortedCards) { card in
+            billingCardRow(for: card)
+        }
+
+        AddBillingCardView(subtitle: nil) {
+            presentAddForm()
+        }
+    }
+
+    @ViewBuilder
+    private var compactCardList: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(sortedCards) { card in
+                CompactBillingCardRowView(card: card)
+            }
+
+            CompactAddBillingCardRowView {
+                presentAddForm()
+            }
+        }
     }
 
     private var sortedCards: [BillingCard] {
@@ -252,6 +290,11 @@ struct DashboardView: View {
 
     private func setSortMode(_ sortMode: CardSortMode) {
         preferences.sortMode = sortMode
+        DashboardPreferencesStore.save(preferences, userDefaults: userDefaults)
+    }
+
+    private func setViewMode(_ viewMode: DashboardViewMode) {
+        preferences.viewMode = viewMode
         DashboardPreferencesStore.save(preferences, userDefaults: userDefaults)
     }
 

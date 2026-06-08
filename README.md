@@ -19,6 +19,7 @@ Implemented:
 - Convert each card's original amount to an estimated JPY amount.
 - Show a Total card with the estimated JPY total.
 - Keep the Summary Card fixed above the scrollable card list, separated from billing cards by a subtle pink dotted separator.
+- Switch between Cards View and Compact View for the billing card list.
 - Sort billing cards by Custom Order, Name, Service Group, Amount High to Low, or Amount Low to High.
 - Rearrange cards with drag and drop when Sort is set to Custom Order.
 - Save the current sorted order as the new Custom Order with `Save as Custom Order`.
@@ -29,6 +30,7 @@ Provider notes:
 - Fixed-price subscription services are managed as Subscription Plan cards, not API integrations. Supported presets include OpenAI ChatGPT, OpenAI Codex, GitHub Copilot, DeepL, Adobe Creative Cloud, Dropbox, YouTube Premium, Netflix, Disney+, Apple TV+, Apple Music, Apple Arcade, iTunes Match, Hulu, Amazon Prime, niconico Premium, ABEMA, d Anime Store, DMM TV, U-NEXT, DAZN, Spotify Premium, Nintendo Switch Online, PlayStation Plus, Xbox Game Pass, Kindle Unlimited, Audible, Apple One, Apple Fitness+, iCloud+, Google One, Microsoft 365, 1Password, and pixiv.
 - Services are grouped as Cloud/Dev, Entertainment, Lifestyle, Shopping, and Manual in the picker and total summary.
 - The Summary Card is not part of sorting or drag and drop. Add Card remains at the end of the scrollable billing card list.
+- Compact View shows each card as one line with logo, name, JPY amount, and original amount only. Sorting still applies, but editing actions and drag and drop are available only in Cards View.
 - Drag and drop is disabled while using Name, Service Group, Amount High to Low, or Amount Low to High sorting. Use `Save as Custom Order` to store the current sorted order before manual rearranging.
 - Subscription plan amounts are editable because prices may vary by region, billing method, campaign, and future price changes. Presets are input helpers only and do not guarantee the latest prices.
 - Bundle services such as Apple One, Apple Music, Apple Arcade, Apple Fitness+, iCloud+, Hulu Disney+ Set, and Google One AI plans can overlap with other cards, so check for double counting when adding cards.
