@@ -21,9 +21,6 @@ struct DashboardView: View {
     @State private var preferences: DashboardPreferences
     @State private var refreshingCardIDs: Set<UUID> = []
     @State private var isRefreshingAll = false
-    @State private var isRefreshAllHovered = false
-    @State private var isSaveOrderHovered = false
-    @State private var isAddHovered = false
     @State private var hoveredReorderCardID: UUID?
 
     init(userDefaults: UserDefaults = CostoastUserDefaults.current) {
@@ -73,58 +70,7 @@ struct DashboardView: View {
         .frame(minWidth: 640, idealWidth: 800, maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                HStack(spacing: 8) {
-                    Picker("Sort", selection: sortModeBinding) {
-                        ForEach(CardSortMode.allCases) { sortMode in
-                            Text(sortMode.displayName)
-                                .tag(sortMode)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 136)
-                    .help(sortModeHelpText)
-                    .disabled(store.cards.isEmpty)
-
-                    Picker("View", selection: viewModeBinding) {
-                        ForEach(DashboardViewMode.allCases) { viewMode in
-                            Text(viewMode.displayName)
-                                .tag(viewMode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 152)
-                    .help("Switch dashboard view.")
-                    .disabled(store.cards.isEmpty)
-
-                    if preferences.sortMode != .custom {
-                        Button(action: saveAsCustomOrder) {
-                            Label("Save as Custom Order", systemImage: "arrow.down.doc")
-                        }
-                        .buttonStyle(DashboardActionButtonStyle(isHovered: isSaveOrderHovered))
-                        .disabled(store.cards.isEmpty)
-                        .accessibilityLabel("Save as Custom Order")
-                        .help("Save the current sorted order and switch to Custom Order.")
-                        .onHover { isSaveOrderHovered = $0 }
-                    }
-
-                    Button(action: refreshAll) {
-                        Label(isRefreshingAll ? "Refreshing" : "Refresh All", systemImage: "arrow.clockwise")
-                    }
-                    .buttonStyle(DashboardActionButtonStyle(isHovered: isRefreshAllHovered))
-                    .disabled(isRefreshingAll || store.cards.isEmpty)
-                    .accessibilityLabel("Refresh All")
-                    .help("Refresh All")
-                    .onHover { isRefreshAllHovered = $0 }
-
-                    Button(action: presentAddForm) {
-                        Label("Add", systemImage: "plus")
-                    }
-                    .buttonStyle(DashboardActionButtonStyle(isHovered: isAddHovered))
-                    .accessibilityLabel("Add Card")
-                    .help("Add Card")
-                    .onHover { isAddHovered = $0 }
-                }
-                .fixedSize()
+                toolbarActions
             }
         }
         .task {
@@ -178,6 +124,78 @@ struct DashboardView: View {
         )
     }
 
+    private var toolbarActions: some View {
+        HStack(spacing: 8) {
+            sortPicker
+            saveCustomOrderButton
+            viewModePicker
+            refreshAllButton
+            addCardButton
+        }
+        .fixedSize()
+    }
+
+    private var sortPicker: some View {
+        Picker("Sort", selection: sortModeBinding) {
+            ForEach(CardSortMode.allCases) { sortMode in
+                Text(sortMode.displayName)
+                    .tag(sortMode)
+            }
+        }
+        .pickerStyle(.menu)
+        .frame(width: 136)
+        .help(sortModeHelpText)
+        .disabled(store.cards.isEmpty)
+    }
+
+    private var saveCustomOrderButton: some View {
+        Button(action: saveAsCustomOrder) {
+            Image(systemName: "square.and.arrow.down")
+                .frame(width: 16, height: 16)
+        }
+        .buttonStyle(.borderless)
+        .frame(width: 38)
+        .disabled(!canSaveAsCustomOrder)
+        .accessibilityLabel("Save as Custom Order")
+        .help("Save as Custom Order")
+    }
+
+    private var viewModePicker: some View {
+        Picker("View", selection: viewModeBinding) {
+            ForEach(DashboardViewMode.allCases) { viewMode in
+                Text(viewMode.displayName)
+                    .tag(viewMode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(width: 152)
+        .help("Switch dashboard view.")
+        .disabled(store.cards.isEmpty)
+    }
+
+    private var refreshAllButton: some View {
+        Button(action: refreshAll) {
+            Label("Refresh All", systemImage: "arrow.clockwise")
+        }
+        .labelStyle(.titleAndIcon)
+        .buttonStyle(.borderless)
+        .frame(width: 112)
+        .disabled(isRefreshingAll || store.cards.isEmpty)
+        .accessibilityLabel("Refresh All")
+        .help("Refresh All")
+    }
+
+    private var addCardButton: some View {
+        Button(action: presentAddForm) {
+            Label("Add", systemImage: "plus")
+        }
+        .labelStyle(.titleAndIcon)
+        .buttonStyle(.borderless)
+        .frame(width: 70)
+        .accessibilityLabel("Add Card")
+        .help("Add Card")
+    }
+
     @ViewBuilder
     private var billingCardList: some View {
         ForEach(sortedCards) { card in
@@ -200,6 +218,10 @@ struct DashboardView: View {
 
     private var sortedCards: [BillingCard] {
         sortedCards(from: store.cards, mode: preferences.sortMode)
+    }
+
+    private var canSaveAsCustomOrder: Bool {
+        !store.cards.isEmpty && preferences.sortMode != .custom
     }
 
     private var sortModeHelpText: String {

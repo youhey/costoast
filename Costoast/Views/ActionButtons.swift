@@ -69,45 +69,6 @@ struct CardActionButtons: View {
     }
 }
 
-struct DashboardActionButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    var isHovered: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 13, weight: .medium))
-            .labelStyle(.titleAndIcon)
-            .foregroundStyle(isEnabled ? .primary : .secondary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(backgroundColor(isPressed: configuration.isPressed))
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(.quaternary.opacity(isHovered ? 1 : 0.65), lineWidth: 1)
-            }
-            .opacity(isEnabled ? 1 : 0.45)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
-            .animation(.easeOut(duration: 0.12), value: isHovered)
-    }
-
-    private func backgroundColor(isPressed: Bool) -> Color {
-        if isPressed {
-            return Color.primary.opacity(0.12)
-        }
-
-        if isHovered {
-            return Color.primary.opacity(0.06)
-        }
-
-        return Color.clear
-    }
-}
-
 private struct IconActionButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
