@@ -74,10 +74,7 @@ struct BillingCardRowView: View {
 
                     Spacer(minLength: 16)
 
-                    Text(jpyAmountText)
-                        .font(.system(size: 20, weight: .semibold))
-                        .lineLimit(1)
-                        .multilineTextAlignment(.trailing)
+                    jpyAmountView
 
                     Text(originalAmountText)
                         .foregroundStyle(.secondary)
@@ -170,12 +167,28 @@ struct BillingCardRowView: View {
         return "\(Self.dateOnlyFormatter.string(from: periodStart)) - \(Self.dateOnlyFormatter.string(from: periodEnd))"
     }
 
-    private var jpyAmountText: String {
-        guard let convertedAmount = card.currentConvertedAmount else {
-            return "JPY unavailable"
-        }
+    @ViewBuilder
+    private var jpyAmountView: some View {
+        if let monthlyAmount = card.currentMonthlyEquivalentJPYAmount,
+           let convertedAmount = card.currentConvertedAmount {
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                Text(BillingCardFormat.jpy(monthlyAmount))
+                    .font(.system(size: 20, weight: .semibold))
 
-        return BillingCardFormat.jpy(convertedAmount.jpyAmount)
+                if card.billingCycle.monthlyEquivalentMultiplier != 1 {
+                    Text("/\(BillingCardFormat.jpy(convertedAmount.jpyAmount))")
+                        .font(.body)
+                        .fontWeight(.regular)
+                }
+            }
+            .lineLimit(1)
+            .multilineTextAlignment(.trailing)
+        } else {
+            Text("JPY unavailable")
+                .font(.system(size: 20, weight: .semibold))
+                .lineLimit(1)
+                .multilineTextAlignment(.trailing)
+        }
     }
 
     private var originalAmountText: String {

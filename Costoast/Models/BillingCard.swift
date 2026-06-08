@@ -375,6 +375,17 @@ enum BillingCycle: String, Codable, CaseIterable, Identifiable {
             "Custom"
         }
     }
+
+    var monthlyEquivalentMultiplier: Decimal {
+        switch self {
+        case .monthly:
+            1
+        case .yearly:
+            Decimal(1) / Decimal(12)
+        case .custom:
+            1
+        }
+    }
 }
 
 enum CurrencyCode: String, Codable, CaseIterable, Identifiable {
@@ -523,5 +534,9 @@ extension BillingCard {
         }
 
         return lastConvertedAmount
+    }
+
+    var currentMonthlyEquivalentJPYAmount: Decimal? {
+        currentConvertedAmount.map { billingCycle.monthlyEquivalentMultiplier * $0.jpyAmount }
     }
 }

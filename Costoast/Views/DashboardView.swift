@@ -509,8 +509,8 @@ private extension DashboardView {
     }
 
     func amountOrder(_ lhs: BillingCard, _ rhs: BillingCard, ascending: Bool) -> Bool {
-        let lhsAmount = lhs.currentConvertedAmount?.jpyAmount
-        let rhsAmount = rhs.currentConvertedAmount?.jpyAmount
+        let lhsAmount = lhs.currentMonthlyEquivalentJPYAmount
+        let rhsAmount = rhs.currentMonthlyEquivalentJPYAmount
 
         switch (lhsAmount, rhsAmount) {
         case let (lhsAmount?, rhsAmount?):

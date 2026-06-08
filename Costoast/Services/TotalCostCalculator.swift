@@ -28,7 +28,7 @@ final class TotalCostCalculator {
             return (card, convertedAmount)
         }
         let total = convertedCards.reduce(Decimal.zero) { partialResult, convertedCard in
-            partialResult + convertedCard.card.billingCycle.monthlyTotalMultiplier * convertedCard.convertedAmount.jpyAmount
+            partialResult + convertedCard.card.billingCycle.monthlyEquivalentMultiplier * convertedCard.convertedAmount.jpyAmount
         }
         let groupTotals = convertedCards.reduce(into: [BillingServiceGroup: Decimal]()) { partialResult, convertedCard in
             guard convertedCard.card.service != .manual,
@@ -36,7 +36,7 @@ final class TotalCostCalculator {
                 return
             }
 
-            let monthlyAmount = convertedCard.card.billingCycle.monthlyTotalMultiplier * convertedCard.convertedAmount.jpyAmount
+            let monthlyAmount = convertedCard.card.billingCycle.monthlyEquivalentMultiplier * convertedCard.convertedAmount.jpyAmount
             partialResult[group, default: .zero] += monthlyAmount
         }
         let latestRate = convertedCards.map(\.convertedAmount).max { lhs, rhs in
@@ -60,19 +60,6 @@ extension BillingService {
     var serviceGroup: BillingServiceGroup? {
         BillingServiceGroup.allCases.first { group in
             group.services.contains(self)
-        }
-    }
-}
-
-private extension BillingCycle {
-    var monthlyTotalMultiplier: Decimal {
-        switch self {
-        case .monthly:
-            1
-        case .yearly:
-            Decimal(1) / Decimal(12)
-        case .custom:
-            1
         }
     }
 }
