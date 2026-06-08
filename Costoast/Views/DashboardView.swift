@@ -197,8 +197,11 @@ struct DashboardView: View {
 
     @ViewBuilder
     private var billingCardList: some View {
-        ForEach(sortedCards) { card in
-            billingCardRow(for: card)
+        let cards = sortedCards
+        let amountColumnWidths = BillingCardAmountColumnWidths.cards(for: cards)
+
+        ForEach(cards) { card in
+            billingCardRow(for: card, amountColumnWidths: amountColumnWidths)
         }
 
         AddBillingCardView(subtitle: nil) {
@@ -208,9 +211,12 @@ struct DashboardView: View {
 
     @ViewBuilder
     private var compactCardList: some View {
+        let cards = sortedCards
+        let amountColumnWidths = BillingCardAmountColumnWidths.compact(for: cards)
+
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(sortedCards) { card in
-                CompactBillingCardRowView(card: card)
+            ForEach(cards) { card in
+                CompactBillingCardRowView(card: card, amountColumnWidths: amountColumnWidths)
             }
         }
     }
@@ -232,9 +238,10 @@ struct DashboardView: View {
     }
 
     @ViewBuilder
-    private func billingCardRow(for card: BillingCard) -> some View {
+    private func billingCardRow(for card: BillingCard, amountColumnWidths: BillingCardAmountColumnWidths) -> some View {
         BillingCardRowView(
             card: card,
+            amountColumnWidths: amountColumnWidths,
             isRefreshing: refreshingCardIDs.contains(card.id),
             canMoveUp: canMoveUp(card),
             canMoveDown: canMoveDown(card),

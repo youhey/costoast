@@ -5,10 +5,12 @@
 //  Created by 池田洋平 on 2026/06/08.
 //
 
+import AppKit
 import SwiftUI
 
 struct BillingCardRowView: View {
     let card: BillingCard
+    let amountColumnWidths: BillingCardAmountColumnWidths
     let isRefreshing: Bool
     let canMoveUp: Bool
     let canMoveDown: Bool
@@ -80,14 +82,14 @@ struct BillingCardRowView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .multilineTextAlignment(.trailing)
-                        .frame(width: Self.originalAmountColumnWidth, alignment: .trailing)
+                        .frame(width: amountColumnWidths.originalAmount, alignment: .trailing)
 
                     Text("Last updated: \(lastUpdatedText)")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .multilineTextAlignment(.trailing)
-                        .frame(width: Self.lastUpdatedColumnWidth, alignment: .trailing)
+                        .frame(width: amountColumnWidths.lastUpdated, alignment: .trailing)
                 }
 
                 statusView
@@ -171,37 +173,32 @@ struct BillingCardRowView: View {
 
     @ViewBuilder
     private var jpyAmountView: some View {
-        Group {
-            if let monthlyAmount = card.currentMonthlyEquivalentJPYAmount,
-               let convertedAmount = card.currentConvertedAmount {
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    Text(BillingCardFormat.jpy(monthlyAmount))
-                        .font(.system(size: 20, weight: .semibold))
-
-                    if card.billingCycle.monthlyEquivalentMultiplier != 1 {
-                        Text("/\(BillingCardFormat.jpy(convertedAmount.jpyAmount))")
-                            .font(.body)
-                            .fontWeight(.regular)
-                    }
-                }
+        HStack(alignment: .firstTextBaseline, spacing: Self.amountColumnSpacing) {
+            Text(monthlyAmountText)
+                .font(.system(size: 20, weight: .semibold))
                 .lineLimit(1)
                 .multilineTextAlignment(.trailing)
-            } else {
-                Text("JPY unavailable")
-                    .font(.system(size: 20, weight: .semibold))
-                    .lineLimit(1)
-                    .multilineTextAlignment(.trailing)
-            }
+                .frame(width: amountColumnWidths.monthlyAmount, alignment: .trailing)
+
+            Text(preMonthlyEquivalentAmountText)
+                .font(.body)
+                .fontWeight(.regular)
+                .lineLimit(1)
+                .multilineTextAlignment(.leading)
+                .frame(width: amountColumnWidths.preMonthlyEquivalentAmount, alignment: .leading)
         }
-        .frame(width: Self.jpyAmountColumnWidth, alignment: .trailing)
     }
 
     private var originalAmountText: String {
-        guard let originalAmount = card.currentOriginalAmount else {
-            return "( -- )"
-        }
+        card.originalAmountDisplayText
+    }
 
-        return "( \(BillingCardFormat.money(originalAmount)) )"
+    private var monthlyAmountText: String {
+        card.monthlyEquivalentAmountDisplayText
+    }
+
+    private var preMonthlyEquivalentAmountText: String {
+        card.preMonthlyEquivalentAmountDisplayText
     }
 
     private var lastUpdatedText: String {
@@ -215,9 +212,72 @@ struct BillingCardRowView: View {
         return formatter
     }()
 
-    private static let jpyAmountColumnWidth: CGFloat = 160
-    private static let originalAmountColumnWidth: CGFloat = 120
-    private static let lastUpdatedColumnWidth: CGFloat = 220
+    private static let amountColumnSpacing: CGFloat = 8
+}
+
+struct BillingCardAmountColumnWidths {
+    var monthlyAmount: CGFloat
+    var preMonthlyEquivalentAmount: CGFloat
+    var originalAmount: CGFloat
+    var lastUpdated: CGFloat
+
+    static func cards(for cards: [BillingCard]) -> BillingCardAmountColumnWidths {
+        BillingCardAmountColumnWidths(
+            monthlyAmount: width(for: cards.map(\.monthlyEquivalentAmountDisplayText), font: .systemFont(ofSize: 20, weight: .semibold)),
+            preMonthlyEquivalentAmount: width(for: cards.map(\.preMonthlyEquivalentAmountDisplayText), font: .systemFont(ofSize: NSFont.systemFontSize, weight: .regular)),
+            originalAmount: width(for: cards.map(\.originalAmountDisplayText), font: .systemFont(ofSize: NSFont.systemFontSize, weight: .regular)),
+            lastUpdated: width(for: cards.map(\.lastUpdatedDisplayText), font: .systemFont(ofSize: NSFont.systemFontSize, weight: .regular))
+        )
+    }
+
+    static func compact(for cards: [BillingCard]) -> BillingCardAmountColumnWidths {
+        BillingCardAmountColumnWidths(
+            monthlyAmount: width(for: cards.map(\.monthlyEquivalentAmountDisplayText), font: .systemFont(ofSize: 17, weight: .semibold)),
+            preMonthlyEquivalentAmount: width(for: cards.map(\.preMonthlyEquivalentAmountDisplayText), font: .systemFont(ofSize: NSFont.systemFontSize, weight: .regular)),
+            originalAmount: width(for: cards.map(\.originalAmountDisplayText), font: .systemFont(ofSize: NSFont.systemFontSize, weight: .regular)),
+            lastUpdated: 0
+        )
+    }
+
+    private static func width(for texts: [String], font: NSFont) -> CGFloat {
+        let maxWidth = texts
+            .filter { !$0.isEmpty }
+            .map { ($0 as NSString).size(withAttributes: [.font: font]).width }
+            .max() ?? 0
+
+        return ceil(maxWidth) + (maxWidth > 0 ? 4 : 0)
+    }
+}
+
+extension BillingCard {
+    var monthlyEquivalentAmountDisplayText: String {
+        guard let monthlyAmount = currentMonthlyEquivalentJPYAmount else {
+            return "JPY unavailable"
+        }
+
+        return BillingCardFormat.jpy(monthlyAmount)
+    }
+
+    var preMonthlyEquivalentAmountDisplayText: String {
+        guard billingCycle.monthlyEquivalentMultiplier != 1,
+              let convertedAmount = currentConvertedAmount else {
+            return ""
+        }
+
+        return "/ \(BillingCardFormat.jpy(convertedAmount.jpyAmount))"
+    }
+
+    var originalAmountDisplayText: String {
+        guard let originalAmount = currentOriginalAmount else {
+            return "( -- )"
+        }
+
+        return "( \(BillingCardFormat.money(originalAmount)) )"
+    }
+
+    var lastUpdatedDisplayText: String {
+        "Last updated: \(BillingCardFormat.jstDateTime(lastBillingResult?.fetchedAt ?? updatedAt))"
+    }
 }
 
 extension BillingService {
@@ -377,6 +437,7 @@ extension BillingService {
             createdAt: Date(),
             updatedAt: Date()
         ),
+        amountColumnWidths: .cards(for: []),
         isRefreshing: false,
         canMoveUp: false,
         canMoveDown: true,

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct CompactBillingCardRowView: View {
     let card: BillingCard
+    let amountColumnWidths: BillingCardAmountColumnWidths
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
@@ -27,7 +28,7 @@ struct CompactBillingCardRowView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .multilineTextAlignment(.trailing)
-                .frame(width: Self.originalAmountColumnWidth, alignment: .trailing)
+                .frame(width: amountColumnWidths.originalAmount, alignment: .trailing)
         }
         .font(.body)
         .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
@@ -62,41 +63,35 @@ struct CompactBillingCardRowView: View {
 
     @ViewBuilder
     private var jpyAmountView: some View {
-        Group {
-            if let monthlyAmount = card.currentMonthlyEquivalentJPYAmount,
-               let convertedAmount = card.currentConvertedAmount {
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    Text(BillingCardFormat.jpy(monthlyAmount))
-                        .font(.system(size: 17, weight: .semibold))
-
-                    if card.billingCycle.monthlyEquivalentMultiplier != 1 {
-                        Text("/\(BillingCardFormat.jpy(convertedAmount.jpyAmount))")
-                            .font(.body)
-                            .fontWeight(.regular)
-                    }
-                }
+        HStack(alignment: .firstTextBaseline, spacing: Self.amountColumnSpacing) {
+            Text(monthlyAmountText)
+                .font(.system(size: 17, weight: .semibold))
                 .lineLimit(1)
                 .multilineTextAlignment(.trailing)
-            } else {
-                Text("JPY unavailable")
-                    .font(.system(size: 17, weight: .semibold))
-                    .lineLimit(1)
-                    .multilineTextAlignment(.trailing)
-            }
+                .frame(width: amountColumnWidths.monthlyAmount, alignment: .trailing)
+
+            Text(preMonthlyEquivalentAmountText)
+                .font(.body)
+                .fontWeight(.regular)
+                .lineLimit(1)
+                .multilineTextAlignment(.leading)
+                .frame(width: amountColumnWidths.preMonthlyEquivalentAmount, alignment: .leading)
         }
-        .frame(width: Self.jpyAmountColumnWidth, alignment: .trailing)
     }
 
     private var originalAmountText: String {
-        guard let originalAmount = card.currentOriginalAmount else {
-            return "( -- )"
-        }
-
-        return "( \(BillingCardFormat.money(originalAmount)) )"
+        card.originalAmountDisplayText
     }
 
-    private static let jpyAmountColumnWidth: CGFloat = 160
-    private static let originalAmountColumnWidth: CGFloat = 120
+    private var monthlyAmountText: String {
+        card.monthlyEquivalentAmountDisplayText
+    }
+
+    private var preMonthlyEquivalentAmountText: String {
+        card.preMonthlyEquivalentAmountDisplayText
+    }
+
+    private static let amountColumnSpacing: CGFloat = 8
 }
 
 #Preview {
@@ -125,7 +120,8 @@ struct CompactBillingCardRowView: View {
                 lastConversionError: nil,
                 createdAt: Date(),
                 updatedAt: Date()
-            )
+            ),
+            amountColumnWidths: .compact(for: [])
         )
     }
     .padding()
