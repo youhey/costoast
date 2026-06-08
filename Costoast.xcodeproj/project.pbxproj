@@ -6,8 +6,24 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D8BF4EB12FD6D00000754CC1 /* CostoastReorderUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8BF4EB02FD6D00000754CC1 /* CostoastReorderUITests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D8BF4EBC2FD6D00000754CC1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D8BF4E922FD6827B00754CC1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D8BF4E992FD6827B00754CC1;
+			remoteInfo = Costoast;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		D8BF4E9A2FD6827B00754CC1 /* Costoast.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Costoast.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8BF4EAF2FD6D00000754CC1 /* CostoastUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CostoastUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8BF4EB02FD6D00000754CC1 /* CostoastReorderUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CostoastReorderUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -26,6 +42,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D8BF4EB42FD6D00000754CC1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				D8BF4E9C2FD6827B00754CC1 /* Costoast */,
+				D8BF4EB22FD6D00000754CC1 /* CostoastUITests */,
 				D8BF4E9B2FD6827B00754CC1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +65,17 @@
 			isa = PBXGroup;
 			children = (
 				D8BF4E9A2FD6827B00754CC1 /* Costoast.app */,
+				D8BF4EAF2FD6D00000754CC1 /* CostoastUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		D8BF4EB22FD6D00000754CC1 /* CostoastUITests */ = {
+			isa = PBXGroup;
+			children = (
+				D8BF4EB02FD6D00000754CC1 /* CostoastReorderUITests.swift */,
+			);
+			path = CostoastUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -70,6 +103,26 @@
 			productReference = D8BF4E9A2FD6827B00754CC1 /* Costoast.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D8BF4EB92FD6D00000754CC1 /* CostoastUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D8BF4EBA2FD6D00000754CC1 /* Build configuration list for PBXNativeTarget "CostoastUITests" */;
+			buildPhases = (
+				D8BF4EB32FD6D00000754CC1 /* Sources */,
+				D8BF4EB42FD6D00000754CC1 /* Frameworks */,
+				D8BF4EB52FD6D00000754CC1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D8BF4EBD2FD6D00000754CC1 /* PBXTargetDependency */,
+			);
+			name = CostoastUITests;
+			packageProductDependencies = (
+			);
+			productName = CostoastUITests;
+			productReference = D8BF4EAF2FD6D00000754CC1 /* CostoastUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -82,6 +135,10 @@
 				TargetAttributes = {
 					D8BF4E992FD6827B00754CC1 = {
 						CreatedOnToolsVersion = 26.5;
+					};
+					D8BF4EB92FD6D00000754CC1 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = D8BF4E992FD6827B00754CC1;
 					};
 				};
 			};
@@ -100,12 +157,20 @@
 			projectRoot = "";
 			targets = (
 				D8BF4E992FD6827B00754CC1 /* Costoast */,
+				D8BF4EB92FD6D00000754CC1 /* CostoastUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		D8BF4E982FD6827B00754CC1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D8BF4EB52FD6D00000754CC1 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +187,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D8BF4EB32FD6D00000754CC1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D8BF4EB12FD6D00000754CC1 /* CostoastReorderUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D8BF4EBD2FD6D00000754CC1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D8BF4E992FD6827B00754CC1 /* Costoast */;
+			targetProxy = D8BF4EBC2FD6D00000754CC1 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		D8BF4EA32FD6827C00754CC1 /* Debug */ = {
@@ -323,6 +404,46 @@
 			};
 			name = Release;
 		};
+		D8BF4EB62FD6D00000754CC1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				PRODUCT_BUNDLE_IDENTIFIER = youhey.CostoastUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Costoast;
+			};
+			name = Debug;
+		};
+		D8BF4EB72FD6D00000754CC1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				PRODUCT_BUNDLE_IDENTIFIER = youhey.CostoastUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Costoast;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -340,6 +461,15 @@
 			buildConfigurations = (
 				D8BF4EA62FD6827C00754CC1 /* Debug */,
 				D8BF4EA72FD6827C00754CC1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D8BF4EBA2FD6D00000754CC1 /* Build configuration list for PBXNativeTarget "CostoastUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D8BF4EB62FD6D00000754CC1 /* Debug */,
+				D8BF4EB72FD6D00000754CC1 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

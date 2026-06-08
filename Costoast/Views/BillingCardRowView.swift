@@ -24,6 +24,7 @@ struct BillingCardRowView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
                         .lineLimit(1)
+                        .accessibilityIdentifier("billing-card-name-\(card.id.uuidString)")
 
                     Text(card.sourceType.displayName)
                         .font(.caption)
@@ -99,6 +100,8 @@ struct BillingCardRowView: View {
                 .frame(width: 5)
                 .padding(.vertical, 10)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("billing-card-row-\(card.id.uuidString)")
     }
 
     @ViewBuilder

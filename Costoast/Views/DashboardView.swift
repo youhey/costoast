@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct DashboardView: View {
     private let credentialStore: CredentialStore
@@ -14,26 +13,28 @@ struct DashboardView: View {
     private let exchangeRateProvider: ExchangeRateProvider
     private let conversionService: CurrencyConversionService
     private let totalCostCalculator: TotalCostCalculator
+    private let userDefaults: UserDefaults
 
     @StateObject private var store: BillingCardStore
     @State private var formPresentation: BillingCardFormPresentation?
     @State private var cardPendingDeletion: BillingCard?
-    @State private var draggedCard: BillingCard?
-    @State private var preferences = DashboardPreferencesStore.load()
+    @State private var preferences: DashboardPreferences
     @State private var refreshingCardIDs: Set<UUID> = []
     @State private var isRefreshingAll = false
     @State private var isRefreshAllHovered = false
     @State private var isSaveOrderHovered = false
     @State private var isAddHovered = false
 
-    init() {
+    init(userDefaults: UserDefaults = CostoastUserDefaults.current) {
         let credentialStore = CredentialStore()
         self.credentialStore = credentialStore
         self.providerRegistry = BillingProviderRegistry()
         self.exchangeRateProvider = FrankfurterExchangeRateProvider()
         self.conversionService = CurrencyConversionService()
         self.totalCostCalculator = TotalCostCalculator()
-        _store = StateObject(wrappedValue: BillingCardStore(credentialStore: credentialStore))
+        self.userDefaults = userDefaults
+        _store = StateObject(wrappedValue: BillingCardStore(userDefaults: userDefaults, credentialStore: credentialStore))
+        _preferences = State(initialValue: DashboardPreferencesStore.load(userDefaults: userDefaults))
     }
 
     var body: some View {
@@ -192,20 +193,40 @@ struct DashboardView: View {
 
         if preferences.sortMode == .custom {
             row
-                .onDrag {
-                    draggedCard = card
-                    return NSItemProvider(object: card.id.uuidString as NSString)
+                .contentShape(Rectangle())
+                .background {
+                    BillingCardReorderDropTarget(cardID: card.id) { sourceCardID in
+                        moveCard(sourceCardID, to: card)
+                    }
                 }
-                .onDrop(
-                    of: [UTType.text],
-                    delegate: BillingCardDropDelegate(
-                        targetCard: card,
-                        draggedCard: $draggedCard,
-                        store: store
-                    )
-                )
+                .overlay(alignment: .leading) {
+                    dragHandle(for: card)
+                }
         } else {
             row
+        }
+    }
+
+    private func dragHandle(for card: BillingCard) -> some View {
+        BillingCardReorderDragHandle(cardID: card.id, serviceName: card.service.displayName)
+            .frame(width: 26, height: 38)
+            .padding(.leading, 10)
+    }
+
+    private func moveCard(_ sourceCardID: UUID, to targetCard: BillingCard) {
+        guard
+            sourceCardID != targetCard.id,
+            let sourceIndex = store.cards.firstIndex(where: { $0.id == sourceCardID }),
+            let destinationIndex = store.cards.firstIndex(where: { $0.id == targetCard.id })
+        else {
+            return
+        }
+
+        withAnimation {
+            store.move(
+                from: IndexSet(integer: sourceIndex),
+                to: destinationIndex > sourceIndex ? destinationIndex + 1 : destinationIndex
+            )
         }
     }
 
@@ -219,10 +240,7 @@ struct DashboardView: View {
 
     private func setSortMode(_ sortMode: CardSortMode) {
         preferences.sortMode = sortMode
-        DashboardPreferencesStore.save(preferences)
-        if sortMode != .custom {
-            draggedCard = nil
-        }
+        DashboardPreferencesStore.save(preferences, userDefaults: userDefaults)
     }
 
     private func saveAsCustomOrder() {

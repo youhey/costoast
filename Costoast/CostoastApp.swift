@@ -9,6 +9,13 @@ import SwiftUI
 
 @main
 struct CostoastApp: App {
+    init() {
+#if DEBUG
+        CostoastUserDefaults.resetUITestSuiteIfNeeded()
+        CostoastUITestSeed.applyIfNeeded(userDefaults: CostoastUserDefaults.current)
+#endif
+    }
+
     var body: some Scene {
         WindowGroup {
             DashboardView()

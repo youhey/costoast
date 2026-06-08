@@ -145,7 +145,7 @@ final class BillingCardStore: ObservableObject {
         }
 
         reorderedCards.insert(contentsOf: movingCards, at: adjustedDestination)
-        cards = normalized(reorderedCards)
+        cards = renumbered(reorderedCards)
         save()
     }
 
@@ -204,6 +204,14 @@ final class BillingCardStore: ObservableObject {
                 normalizedCard.updatedAt = Date()
             }
             return normalizedCard
+        }
+    }
+
+    private func renumbered(_ cards: [BillingCard]) -> [BillingCard] {
+        cards.enumerated().map { index, card in
+            var renumberedCard = card
+            renumberedCard.displayOrder = index
+            return renumberedCard
         }
     }
 }
