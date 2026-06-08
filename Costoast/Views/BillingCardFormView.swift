@@ -123,7 +123,7 @@ struct BillingCardFormView: View {
                 Picker("Service", selection: $service) {
                     Text("none").tag(Optional<BillingService>.none)
                     Divider()
-                    ForEach(BillingServiceGroup.allCases) { group in
+                    ForEach(Self.selectableServiceGroups) { group in
                         Section(group.displayName) {
                             ForEach(group.services) { service in
                                 Text(service.displayName).tag(Optional(service))
@@ -795,6 +795,10 @@ struct BillingCardFormView: View {
         return SubscriptionPlanPresetCatalog.presets(for: card.service)
             .first { $0.name == planName }?
             .id
+    }
+
+    private static var selectableServiceGroups: [BillingServiceGroup] {
+        BillingServiceGroup.allCases.filter { $0 != .shopping }
     }
 
     private static func allowsSourceTypeSelection(_ selectedService: BillingService?) -> Bool {
