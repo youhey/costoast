@@ -367,7 +367,7 @@ extension BillingService {
         case .onePassword:
             .asset("Logo1Password")
         case .pixiv:
-            .symbol("paintbrush.fill")
+            .asset("LogoPixiv")
         case .amazonShopping:
             .asset("LogoAmazon")
         case .yahooShopping:

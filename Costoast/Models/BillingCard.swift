@@ -309,7 +309,8 @@ enum BillingServiceGroup: String, CaseIterable, Identifiable {
                 .spotifyPremium,
                 .nintendoSwitchOnline,
                 .playStationPlus,
-                .xboxGamePass
+                .xboxGamePass,
+                .pixiv
             ]
         case .lifestyle:
             [
@@ -321,8 +322,7 @@ enum BillingServiceGroup: String, CaseIterable, Identifiable {
                 .iCloudPlus,
                 .googleOne,
                 .microsoft365,
-                .onePassword,
-                .pixiv
+                .onePassword
             ]
         case .shopping:
             [
