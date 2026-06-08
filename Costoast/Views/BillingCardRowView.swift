@@ -80,12 +80,14 @@ struct BillingCardRowView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .multilineTextAlignment(.trailing)
+                        .frame(width: Self.originalAmountColumnWidth, alignment: .trailing)
 
                     Text("Last updated: \(lastUpdatedText)")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .multilineTextAlignment(.trailing)
+                        .frame(width: Self.lastUpdatedColumnWidth, alignment: .trailing)
                 }
 
                 statusView
@@ -169,26 +171,29 @@ struct BillingCardRowView: View {
 
     @ViewBuilder
     private var jpyAmountView: some View {
-        if let monthlyAmount = card.currentMonthlyEquivalentJPYAmount,
-           let convertedAmount = card.currentConvertedAmount {
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                Text(BillingCardFormat.jpy(monthlyAmount))
-                    .font(.system(size: 20, weight: .semibold))
+        Group {
+            if let monthlyAmount = card.currentMonthlyEquivalentJPYAmount,
+               let convertedAmount = card.currentConvertedAmount {
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(BillingCardFormat.jpy(monthlyAmount))
+                        .font(.system(size: 20, weight: .semibold))
 
-                if card.billingCycle.monthlyEquivalentMultiplier != 1 {
-                    Text("/\(BillingCardFormat.jpy(convertedAmount.jpyAmount))")
-                        .font(.body)
-                        .fontWeight(.regular)
+                    if card.billingCycle.monthlyEquivalentMultiplier != 1 {
+                        Text("/\(BillingCardFormat.jpy(convertedAmount.jpyAmount))")
+                            .font(.body)
+                            .fontWeight(.regular)
+                    }
                 }
-            }
-            .lineLimit(1)
-            .multilineTextAlignment(.trailing)
-        } else {
-            Text("JPY unavailable")
-                .font(.system(size: 20, weight: .semibold))
                 .lineLimit(1)
                 .multilineTextAlignment(.trailing)
+            } else {
+                Text("JPY unavailable")
+                    .font(.system(size: 20, weight: .semibold))
+                    .lineLimit(1)
+                    .multilineTextAlignment(.trailing)
+            }
         }
+        .frame(width: Self.jpyAmountColumnWidth, alignment: .trailing)
     }
 
     private var originalAmountText: String {
@@ -210,6 +215,9 @@ struct BillingCardRowView: View {
         return formatter
     }()
 
+    private static let jpyAmountColumnWidth: CGFloat = 160
+    private static let originalAmountColumnWidth: CGFloat = 120
+    private static let lastUpdatedColumnWidth: CGFloat = 220
 }
 
 extension BillingService {
