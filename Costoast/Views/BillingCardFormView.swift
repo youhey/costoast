@@ -112,7 +112,7 @@ struct BillingCardFormView: View {
                     Picker("Source Type", selection: $sourceType) {
                         Text("none").tag(Optional<BillingSourceType>.none)
                         Divider()
-                        ForEach(BillingSourceType.allCases) { sourceType in
+                        ForEach(Self.supportedSourceTypes(for: service)) { sourceType in
                             Text(sourceType.displayName).tag(Optional(sourceType))
                         }
                     }
@@ -135,6 +135,12 @@ struct BillingCardFormView: View {
                         Text("Plan amounts are editable because subscription prices may vary by region, billing method, and future price changes.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
+
+                        if let selectedPlanNote {
+                            Text(selectedPlanNote)
+                                .font(.callout)
+                                .foregroundStyle(.orange)
+                        }
                     }
 
                     TextField("Plan Name", text: $planName)
@@ -493,8 +499,13 @@ struct BillingCardFormView: View {
             return
         }
 
-        if Self.requiresSubscriptionPlan(selectedService) {
-            sourceType = .subscriptionPlan
+        if Self.defaultsToSubscriptionPlan(selectedService) {
+            if let sourceType, Self.supportedSourceTypes(for: selectedService).contains(sourceType), sourceType != .apiUsage {
+                resetPlanFields()
+                return
+            } else {
+                sourceType = .subscriptionPlan
+            }
             resetPlanFields()
             return
         }
@@ -518,6 +529,18 @@ struct BillingCardFormView: View {
         currency = preset.currency
         amountText = preset.amount.map(BillingCardFormat.decimal) ?? ""
         billingCycle = preset.billingCycle
+    }
+
+    private var selectedPlanNote: String? {
+        guard
+            sourceType == .subscriptionPlan,
+            let selectedPlanPresetID,
+            let preset = SubscriptionPlanPresetCatalog.presets(for: service).first(where: { $0.id == selectedPlanPresetID })
+        else {
+            return nil
+        }
+
+        return preset.note
     }
 
     private func updateSuggestedName(for selectedService: BillingService?) {
@@ -546,11 +569,15 @@ struct BillingCardFormView: View {
     }
 
     private static func initialSourceType(for card: BillingCard?) -> BillingSourceType? {
+        if let card, supportedSourceTypes(for: card.service).contains(card.sourceType) {
+            return card.sourceType
+        }
+
         if requiresAPIUsage(card?.service) {
             return .apiUsage
         }
 
-        if requiresSubscriptionPlan(card?.service) {
+        if defaultsToSubscriptionPlan(card?.service) {
             return .subscriptionPlan
         }
 
@@ -572,7 +599,19 @@ struct BillingCardFormView: View {
     }
 
     private static func allowsSourceTypeSelection(_ selectedService: BillingService?) -> Bool {
-        !requiresAPIUsage(selectedService) && !requiresSubscriptionPlan(selectedService)
+        supportedSourceTypes(for: selectedService).count > 1
+    }
+
+    private static func supportedSourceTypes(for selectedService: BillingService?) -> [BillingSourceType] {
+        if requiresAPIUsage(selectedService) {
+            return [.apiUsage]
+        }
+
+        if defaultsToSubscriptionPlan(selectedService) {
+            return [.subscriptionPlan, .manualAmount]
+        }
+
+        return BillingSourceType.allCases
     }
 
     private static func requiresAPIUsage(_ selectedService: BillingService?) -> Bool {
@@ -584,11 +623,11 @@ struct BillingCardFormView: View {
         }
     }
 
-    private static func requiresSubscriptionPlan(_ selectedService: BillingService?) -> Bool {
+    private static func defaultsToSubscriptionPlan(_ selectedService: BillingService?) -> Bool {
         switch selectedService {
-        case .openAiChatGpt, .youtube, .netflix, .appleTvPlus, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext:
+        case .openAiChatGpt, .githubCopilot, .deepl, .adobeCreativeCloud, .dropbox, .youtube, .netflix, .disneyPlus, .appleTvPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword:
             true
-        case .aws, .gcp, .azure, .cloudflare, .laravelCloud, .githubCopilot, .openAiCodex, .openAiApi, .claude, .claudeCode, .deepl, .adobeCreativeCloud, .dropbox, .disneyPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual, nil:
+        case .aws, .gcp, .azure, .cloudflare, .laravelCloud, .openAiCodex, .openAiApi, .claude, .claudeCode, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual, nil:
             false
         }
     }

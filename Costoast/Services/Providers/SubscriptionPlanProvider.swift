@@ -29,7 +29,23 @@ struct SubscriptionPlanProvider: BillingProvider {
             amountKind: .subscription,
             fetchedAt: Date(),
             dataFreshness: .manual,
-            message: card.planName
+            message: message(for: card)
         )
+    }
+
+    private func message(for card: BillingCard) -> String? {
+        guard let planName = card.planName else {
+            return nil
+        }
+
+        guard
+            let preset = SubscriptionPlanPresetCatalog.presets(for: card.service)
+                .first(where: { $0.name == planName }),
+            let note = preset.note
+        else {
+            return planName
+        }
+
+        return "\(planName) - \(note)"
     }
 }

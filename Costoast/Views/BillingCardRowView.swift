@@ -138,6 +138,9 @@ struct BillingCardRowView: View {
         } else if card.sourceType == .apiUsage && card.lastBillingResult == nil {
             Text("Not configured")
                 .foregroundStyle(.secondary)
+        } else if (card.sourceType == .subscriptionPlan || card.sourceType == .manualAmount) && card.currentOriginalAmount == nil {
+            Text("Amount not set")
+                .foregroundStyle(.secondary)
         } else if card.currentOriginalAmount == nil {
             Text("Amount unavailable")
                 .foregroundStyle(.secondary)
