@@ -11,7 +11,8 @@ import SwiftUI
 struct CostoastApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            DashboardView()
         }
+        .defaultSize(width: 800, height: 360)
     }
 }
