@@ -37,7 +37,9 @@ struct TotalCostCardView: View {
                 }
             }
             .font(.body)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(width: 310, alignment: .leading)
+
+            groupTotalsView
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
@@ -60,6 +62,40 @@ struct TotalCostCardView: View {
             .accessibilityHidden(true)
     }
 
+    private var groupTotalsView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                groupTotalBadge(for: .cloudDev)
+                groupTotalBadge(for: .entertainment)
+            }
+            HStack(spacing: 8) {
+                groupTotalBadge(for: .lifestyle)
+                groupTotalBadge(for: .shopping)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+
+    private func groupTotalBadge(for group: BillingServiceGroup) -> some View {
+        HStack(spacing: 8) {
+            Text(group.displayName)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            Text(BillingCardFormat.jpy(summary.groupTotalsJPY[group] ?? .zero))
+                .fontWeight(.semibold)
+                .lineLimit(1)
+        }
+        .font(.caption)
+        .foregroundStyle(group.badgeColor)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .frame(width: 168)
+        .overlay {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(group.badgeColor.opacity(0.75), lineWidth: 1)
+        }
+    }
+
     private func cardLabel(_ count: Int) -> String {
         count == 1 ? "card" : "cards"
     }
@@ -76,6 +112,12 @@ struct TotalCostCardView: View {
     TotalCostCardView(
         summary: TotalCostSummary(
             totalJPY: 18420,
+            groupTotalsJPY: [
+                .cloudDev: 123456,
+                .entertainment: 23456,
+                .lifestyle: 3456,
+                .shopping: 456
+            ],
             activeCardCount: 4,
             includedCardCount: 3,
             excludedCardCount: 1,
@@ -86,4 +128,21 @@ struct TotalCostCardView: View {
     )
     .padding()
     .frame(width: 800)
+}
+
+private extension BillingServiceGroup {
+    var badgeColor: Color {
+        switch self {
+        case .cloudDev:
+            .blue
+        case .entertainment:
+            .pink
+        case .lifestyle:
+            .green
+        case .shopping:
+            .orange
+        case .manual:
+            .gray
+        }
+    }
 }

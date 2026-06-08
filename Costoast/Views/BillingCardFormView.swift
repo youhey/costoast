@@ -96,8 +96,12 @@ struct BillingCardFormView: View {
                 Picker("Service", selection: $service) {
                     Text("none").tag(Optional<BillingService>.none)
                     Divider()
-                    ForEach(BillingService.allCases) { service in
-                        Text(service.displayName).tag(Optional(service))
+                    ForEach(BillingServiceGroup.allCases) { group in
+                        Section(group.displayName) {
+                            ForEach(group.services) { service in
+                                Text(service.displayName).tag(Optional(service))
+                            }
+                        }
                     }
                 }
                 .onChange(of: service) { previousService, selectedService in
@@ -575,7 +579,7 @@ struct BillingCardFormView: View {
         switch selectedService {
         case .aws, .azure, .gcp, .cloudflare, .openAiApi:
             true
-        case .openAiChatGpt, .openAiCodex, .claude, .claudeCode, .deepl, .youtube, .netflix, .appleTvPlus, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .yodobashi, .yahooShopping, .mercari, .manual, .laravelCloud, nil:
+        case .laravelCloud, .githubCopilot, .openAiChatGpt, .openAiCodex, .claude, .claudeCode, .deepl, .adobeCreativeCloud, .dropbox, .youtube, .netflix, .disneyPlus, .appleTvPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual, nil:
             false
         }
     }
@@ -584,7 +588,7 @@ struct BillingCardFormView: View {
         switch selectedService {
         case .openAiChatGpt, .youtube, .netflix, .appleTvPlus, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext:
             true
-        case .aws, .gcp, .azure, .cloudflare, .laravelCloud, .openAiCodex, .openAiApi, .claude, .claudeCode, .deepl, .yodobashi, .yahooShopping, .mercari, .manual, nil:
+        case .aws, .gcp, .azure, .cloudflare, .laravelCloud, .githubCopilot, .openAiCodex, .openAiApi, .claude, .claudeCode, .deepl, .adobeCreativeCloud, .dropbox, .disneyPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual, nil:
             false
         }
     }

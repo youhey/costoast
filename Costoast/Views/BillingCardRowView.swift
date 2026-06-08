@@ -36,6 +36,17 @@ struct BillingCardRowView: View {
                                 .stroke(.gray.opacity(0.35), lineWidth: 1)
                         }
 
+                    Text(card.service.serviceGroupLabel)
+                        .font(.caption)
+                        .foregroundStyle(card.service.serviceGroupColor)
+                        .lineLimit(1)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(card.service.serviceGroupColor.opacity(0.75), lineWidth: 1)
+                        }
+
                     Spacer(minLength: 12)
 
                     CardActionButtons(
@@ -81,6 +92,12 @@ struct BillingCardRowView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(.quaternary, lineWidth: 1)
+        }
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(card.service.serviceGroupColor)
+                .frame(width: 5)
+                .padding(.vertical, 10)
         }
     }
 
@@ -185,26 +202,111 @@ private extension BillingService {
             .asset("LogoCloudflare")
         case .laravelCloud:
             .asset("LogoLaravelCloud")
+        case .githubCopilot:
+            .asset("LogoGithub")
         case .openAiChatGpt, .openAiCodex, .openAiApi:
             .asset("LogoOpenAI")
         case .claude, .claudeCode:
             .asset("LogoClaude")
         case .deepl:
             .asset("LogoDeepL")
+        case .adobeCreativeCloud:
+            .asset("LogoAdobe")
+        case .dropbox:
+            .asset("LogoDropbox")
         case .youtube:
             .asset("LogoYoutube")
-        case .netflix, .uNext:
-            .symbol("play.tv.fill")
-        case .appleTvPlus, .dAnimeStore, .dmmTv:
-            .symbol("tv.fill")
-        case .amazon:
-            .symbol("shippingbox.fill")
-        case .niconicoPremium:
-            .symbol("play.square.fill")
+        case .netflix:
+            .asset("LogoNetflix")
+        case .disneyPlus:
+            .asset("LogoDisneyPlus")
+        case .uNext:
+            .asset("LogoUNext")
+        case .dazn:
+            .asset("LogoDAZN")
+        case .appleTvPlus:
+            .asset("LogoAppleTVPlus")
+        case .appleMusic:
+            .asset("LogoAppleMusic")
+        case .appleArcade:
+            .asset("LogoAppleArcade")
+        case .iTunesMatch:
+            .asset("LogoITunes")
+        case .hulu:
+            .asset("LogoHulu")
+        case .dAnimeStore:
+            .asset("LogoDAnimeStore")
+        case .dmmTv:
+            .asset("LogoDMM")
+        case .spotifyPremium:
+            .asset("LogoSpotify")
+        case .nintendoSwitchOnline:
+            .asset("LogoNintendoSwitchOnline")
+        case .playStationPlus:
+            .asset("LogoPlayStationPlus")
+        case .xboxGamePass:
+            .asset("LogoXboxGamePass")
         case .abema:
-            .symbol("play.rectangle.fill")
-        case .yodobashi, .yahooShopping, .mercari, .manual:
+            .asset("LogoABEMA")
+        case .amazon:
+            .asset("LogoAmazonPrime")
+        case .niconicoPremium:
+            .asset("LogoNiconico")
+        case .kindleUnlimited:
+            .asset("LogoAmazonKindle")
+        case .audible:
+            .asset("LogoAudible")
+        case .appleOne:
+            .asset("LogoAppleOne")
+        case .appleFitnessPlus:
+            .asset("LogoApple")
+        case .iCloudPlus:
+            .asset("LogoICloud")
+        case .googleOne:
+            .asset("LogoGoogleOne")
+        case .microsoft365:
+            .asset("LogoMicrosoft365")
+        case .onePassword:
+            .asset("Logo1Password")
+        case .amazonShopping:
+            .asset("LogoAmazon")
+        case .yahooShopping:
+            .asset("LogoYahooShopping")
+        case .mercari:
+            .asset("LogoMercari")
+        case .yodobashi, .manual:
             .asset("LogoUnknown")
+        }
+    }
+
+    var serviceGroupLabel: String {
+        if self == .manual {
+            return "Manual"
+        }
+
+        return serviceGroup?.displayName ?? "Unknown"
+    }
+
+    var serviceGroupColor: Color {
+        if self == .manual {
+            return .gray
+        }
+
+        guard let serviceGroup else {
+            return .gray
+        }
+
+        switch serviceGroup {
+        case .cloudDev:
+            return .blue
+        case .entertainment:
+            return .pink
+        case .lifestyle:
+            return .green
+        case .shopping:
+            return .orange
+        case .manual:
+            return .gray
         }
     }
 }

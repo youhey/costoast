@@ -57,21 +57,43 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
     case azure
     case cloudflare
     case laravelCloud
+    case githubCopilot
     case openAiChatGpt
     case openAiCodex
     case openAiApi
     case claude
     case claudeCode
     case deepl
+    case adobeCreativeCloud
+    case dropbox
     case youtube
     case netflix
+    case disneyPlus
     case appleTvPlus
+    case appleMusic
+    case appleArcade
+    case iTunesMatch
+    case hulu
     case amazon
     case niconicoPremium
     case abema
     case dAnimeStore
     case dmmTv
     case uNext
+    case dazn
+    case spotifyPremium
+    case nintendoSwitchOnline
+    case playStationPlus
+    case xboxGamePass
+    case kindleUnlimited
+    case audible
+    case appleOne
+    case appleFitnessPlus
+    case iCloudPlus
+    case googleOne
+    case microsoft365
+    case onePassword
+    case amazonShopping
     case yodobashi
     case yahooShopping
     case mercari
@@ -91,6 +113,8 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
             "Cloudflare"
         case .laravelCloud:
             "Laravel Cloud"
+        case .githubCopilot:
+            "GitHub Copilot"
         case .openAiChatGpt:
             "OpenAI ChatGPT"
         case .openAiCodex:
@@ -103,12 +127,26 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
             "Claude Code"
         case .deepl:
             "DeepL"
+        case .adobeCreativeCloud:
+            "Adobe Creative Cloud"
+        case .dropbox:
+            "Dropbox"
         case .youtube:
             "YouTube Premium"
         case .netflix:
             "Netflix"
+        case .disneyPlus:
+            "Disney+"
         case .appleTvPlus:
             "Apple TV+"
+        case .appleMusic:
+            "Apple Music"
+        case .appleArcade:
+            "Apple Arcade"
+        case .iTunesMatch:
+            "iTunes Match"
+        case .hulu:
+            "Hulu"
         case .amazon:
             "Amazon Prime"
         case .niconicoPremium:
@@ -121,6 +159,34 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
             "DMM TV"
         case .uNext:
             "U-NEXT"
+        case .dazn:
+            "DAZN"
+        case .spotifyPremium:
+            "Spotify Premium"
+        case .nintendoSwitchOnline:
+            "Nintendo Switch Online"
+        case .playStationPlus:
+            "PlayStation Plus"
+        case .xboxGamePass:
+            "Xbox Game Pass"
+        case .kindleUnlimited:
+            "Kindle Unlimited"
+        case .audible:
+            "Audible"
+        case .appleOne:
+            "Apple One"
+        case .appleFitnessPlus:
+            "Apple Fitness+"
+        case .iCloudPlus:
+            "iCloud+"
+        case .googleOne:
+            "Google One"
+        case .microsoft365:
+            "Microsoft 365"
+        case .onePassword:
+            "1Password"
+        case .amazonShopping:
+            "Amazon"
         case .yodobashi:
             "Yodobashi"
         case .yahooShopping:
@@ -128,7 +194,93 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
         case .mercari:
             "Mercari"
         case .manual:
+            "Manual Amount"
+        }
+    }
+}
+
+enum BillingServiceGroup: String, CaseIterable, Identifiable {
+    case cloudDev
+    case entertainment
+    case lifestyle
+    case shopping
+    case manual
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .cloudDev:
+            "Cloud/Dev"
+        case .entertainment:
+            "Entertainment"
+        case .lifestyle:
+            "Lifestyle"
+        case .shopping:
+            "Shopping"
+        case .manual:
             "Manual"
+        }
+    }
+
+    var services: [BillingService] {
+        switch self {
+        case .cloudDev:
+            [
+                .aws,
+                .gcp,
+                .azure,
+                .cloudflare,
+                .openAiApi,
+                .openAiChatGpt,
+                .githubCopilot,
+                .deepl,
+                .adobeCreativeCloud,
+                .dropbox
+            ]
+        case .entertainment:
+            [
+                .youtube,
+                .netflix,
+                .disneyPlus,
+                .appleTvPlus,
+                .appleMusic,
+                .appleArcade,
+                .iTunesMatch,
+                .hulu,
+                .uNext,
+                .niconicoPremium,
+                .dAnimeStore,
+                .dmmTv,
+                .dazn,
+                .spotifyPremium,
+                .nintendoSwitchOnline,
+                .playStationPlus,
+                .xboxGamePass
+            ]
+        case .lifestyle:
+            [
+                .amazon,
+                .kindleUnlimited,
+                .audible,
+                .appleOne,
+                .appleFitnessPlus,
+                .iCloudPlus,
+                .googleOne,
+                .microsoft365,
+                .onePassword
+            ]
+        case .shopping:
+            [
+                .amazonShopping,
+                .yodobashi,
+                .yahooShopping,
+                .mercari
+            ]
+        case .manual:
+            [
+                .manual
+            ]
         }
     }
 }
