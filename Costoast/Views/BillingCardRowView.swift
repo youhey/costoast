@@ -22,13 +22,12 @@ struct BillingCardRowView: View {
 
                 Spacer()
 
-                HStack(spacing: 8) {
-                    Button(isRefreshing ? "Loading..." : "Refresh", action: onRefresh)
-                        .disabled(isRefreshing)
-                    Button("Edit", action: onEdit)
-                    Button("Delete", role: .destructive, action: onDelete)
-                }
-                .buttonStyle(.borderless)
+                CardActionButtons(
+                    isRefreshing: isRefreshing,
+                    onRefresh: onRefresh,
+                    onEdit: onEdit,
+                    onDelete: onDelete
+                )
             }
 
             VStack(alignment: .leading, spacing: 6) {

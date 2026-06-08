@@ -21,6 +21,8 @@ struct DashboardView: View {
     @State private var draggedCard: BillingCard?
     @State private var refreshingCardIDs: Set<UUID> = []
     @State private var isRefreshingAll = false
+    @State private var isRefreshAllHovered = false
+    @State private var isAddHovered = false
 
     init() {
         let credentialStore = CredentialStore()
@@ -34,13 +36,37 @@ struct DashboardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Costoast")
-                    .font(.system(size: 34, weight: .semibold, design: .rounded))
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Costoast")
+                        .font(.system(size: 34, weight: .semibold, design: .rounded))
 
-                Text("Your costs, served fresh.")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
+                    Text("Your costs, served fresh.")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                HStack(spacing: 8) {
+                    Button(action: refreshAll) {
+                        Label(isRefreshingAll ? "Refreshing" : "Refresh All", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(DashboardActionButtonStyle(isHovered: isRefreshAllHovered))
+                    .disabled(isRefreshingAll || store.cards.isEmpty)
+                    .accessibilityLabel("Refresh All")
+                    .help("Refresh All")
+                    .onHover { isRefreshAllHovered = $0 }
+
+                    Button(action: presentAddForm) {
+                        Label("Add", systemImage: "plus")
+                    }
+                    .buttonStyle(DashboardActionButtonStyle(isHovered: isAddHovered))
+                    .accessibilityLabel("Add Card")
+                    .help("Add Card")
+                    .onHover { isAddHovered = $0 }
+                }
+                .padding(.top, 4)
             }
 
             if let storageError = store.storageError {
@@ -52,11 +78,7 @@ struct DashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     TotalCostCardView(
-                        summary: totalCostCalculator.summarize(cards: store.cards),
-                        isRefreshing: isRefreshingAll,
-                        onRefreshAll: {
-                            refreshAll()
-                        }
+                        summary: totalCostCalculator.summarize(cards: store.cards)
                     )
 
                     if store.cards.isEmpty {

@@ -9,21 +9,11 @@ import SwiftUI
 
 struct TotalCostCardView: View {
     let summary: TotalCostSummary
-    let isRefreshing: Bool
-    let onRefreshAll: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Total")
-                    .font(.headline)
-
-                Spacer()
-
-                Button(isRefreshing ? "Loading..." : "Refresh All", action: onRefreshAll)
-                    .buttonStyle(.borderless)
-                    .disabled(isRefreshing || summary.activeCardCount == 0)
-            }
+            Text("Total")
+                .font(.headline)
 
             Text("\(BillingCardFormat.jpy(summary.totalJPY)) estimated")
                 .font(.title2)
@@ -76,9 +66,7 @@ struct TotalCostCardView: View {
             rateFetchedAt: Date(),
             sourceName: "Frankfurter",
             hasConversionErrors: false
-        ),
-        isRefreshing: false,
-        onRefreshAll: {}
+        )
     )
     .padding()
     .frame(width: 800)
