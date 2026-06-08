@@ -10,6 +10,10 @@ import SwiftUI
 struct BillingCardRowView: View {
     let card: BillingCard
     let isRefreshing: Bool
+    let canMoveUp: Bool
+    let canMoveDown: Bool
+    let onMoveUp: () -> Void
+    let onMoveDown: () -> Void
     let onRefresh: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
@@ -51,7 +55,12 @@ struct BillingCardRowView: View {
                     Spacer(minLength: 12)
 
                     CardActionButtons(
+                        cardID: card.id,
                         isRefreshing: isRefreshing,
+                        canMoveUp: canMoveUp,
+                        canMoveDown: canMoveDown,
+                        onMoveUp: onMoveUp,
+                        onMoveDown: onMoveDown,
                         onRefresh: onRefresh,
                         onEdit: onEdit,
                         onDelete: onDelete
@@ -348,6 +357,10 @@ extension BillingService {
             updatedAt: Date()
         ),
         isRefreshing: false,
+        canMoveUp: false,
+        canMoveDown: true,
+        onMoveUp: {},
+        onMoveDown: {},
         onRefresh: {},
         onEdit: {},
         onDelete: {}

@@ -38,13 +38,26 @@ struct IconActionButton: View {
 }
 
 struct CardActionButtons: View {
+    let cardID: UUID
     let isRefreshing: Bool
+    let canMoveUp: Bool
+    let canMoveDown: Bool
+    let onMoveUp: () -> Void
+    let onMoveDown: () -> Void
     let onRefresh: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
+            CardReorderButtons(
+                cardID: cardID,
+                canMoveUp: canMoveUp,
+                canMoveDown: canMoveDown,
+                onMoveUp: onMoveUp,
+                onMoveDown: onMoveDown
+            )
+
             IconActionButton(
                 systemName: "arrow.clockwise",
                 accessibilityLabel: "Refresh Card",
@@ -66,6 +79,56 @@ struct CardActionButtons: View {
                 action: onDelete
             )
         }
+    }
+}
+
+private struct CardReorderButtons: View {
+    let cardID: UUID
+    let canMoveUp: Bool
+    let canMoveDown: Bool
+    let onMoveUp: () -> Void
+    let onMoveDown: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            reorderButton(
+                systemName: "chevron.up",
+                accessibilityLabel: "Move Card Up",
+                isDisabled: !canMoveUp,
+                action: onMoveUp
+            )
+
+            reorderButton(
+                systemName: "chevron.down",
+                accessibilityLabel: "Move Card Down",
+                isDisabled: !canMoveDown,
+                action: onMoveDown
+            )
+        }
+        .frame(width: 22, height: 30)
+        .background {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(Color.primary.opacity(0.035))
+        }
+    }
+
+    private func reorderButton(
+        systemName: String,
+        accessibilityLabel: String,
+        isDisabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 9, weight: .semibold))
+                .frame(width: 20, height: 14)
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.32 : 1)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityIdentifier("\(accessibilityLabel.replacingOccurrences(of: " ", with: "-").lowercased())-\(cardID.uuidString)")
+        .help(accessibilityLabel)
     }
 }
 

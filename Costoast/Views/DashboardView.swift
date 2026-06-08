@@ -21,7 +21,6 @@ struct DashboardView: View {
     @State private var preferences: DashboardPreferences
     @State private var refreshingCardIDs: Set<UUID> = []
     @State private var isRefreshingAll = false
-    @State private var hoveredReorderCardID: UUID?
 
     init(userDefaults: UserDefaults = CostoastUserDefaults.current) {
         let credentialStore = CredentialStore()
@@ -226,17 +225,25 @@ struct DashboardView: View {
 
     private var sortModeHelpText: String {
         if preferences.sortMode == .custom {
-            return "Custom Order. Drag cards to rearrange them."
+            return "Custom Order. Use arrow controls on each card to rearrange them."
         }
 
-        return "Sorted by \(preferences.sortMode.displayName). Switch to Custom Order to rearrange cards."
+        return "Sorted by \(preferences.sortMode.displayName). Use card arrow controls to save a new Custom Order."
     }
 
     @ViewBuilder
     private func billingCardRow(for card: BillingCard) -> some View {
-        let row = BillingCardRowView(
+        BillingCardRowView(
             card: card,
             isRefreshing: refreshingCardIDs.contains(card.id),
+            canMoveUp: canMoveUp(card),
+            canMoveDown: canMoveDown(card),
+            onMoveUp: {
+                moveCard(card, by: -1)
+            },
+            onMoveDown: {
+                moveCard(card, by: 1)
+            },
             onRefresh: {
                 refresh(card)
             },
@@ -247,54 +254,38 @@ struct DashboardView: View {
                 cardPendingDeletion = card
             }
         )
+    }
 
-        if preferences.sortMode == .custom {
-            row
-                .contentShape(Rectangle())
-                .onHover { isHovered in
-                    hoveredReorderCardID = isHovered ? card.id : nil
-                }
-                .background {
-                    BillingCardReorderDropTarget(cardID: card.id) { sourceCardID in
-                        moveCard(sourceCardID, to: card)
-                    }
-                }
-                .overlay(alignment: .leading) {
-                    dragHandle(for: card)
-                }
-        } else {
-            row
+    private func canMoveUp(_ card: BillingCard) -> Bool {
+        guard let index = sortedCards.firstIndex(where: { $0.id == card.id }) else {
+            return false
         }
+
+        return index > 0
     }
 
-    @ViewBuilder
-    private func dragHandle(for card: BillingCard) -> some View {
-        if shouldShowDragHandle(for: card) {
-            BillingCardReorderDragHandle(cardID: card.id, serviceName: card.service.displayName)
-                .frame(width: 26, height: 38)
-                .padding(.leading, 10)
-                .transition(.opacity)
+    private func canMoveDown(_ card: BillingCard) -> Bool {
+        guard let index = sortedCards.firstIndex(where: { $0.id == card.id }) else {
+            return false
         }
+
+        return index < sortedCards.count - 1
     }
 
-    private func shouldShowDragHandle(for card: BillingCard) -> Bool {
-        hoveredReorderCardID == card.id || ProcessInfo.processInfo.environment["COSTOAST_UI_TEST_SEED_REORDER"] == "1"
-    }
-
-    private func moveCard(_ sourceCardID: UUID, to targetCard: BillingCard) {
+    private func moveCard(_ card: BillingCard, by offset: Int) {
+        var currentOrder = sortedCards
         guard
-            sourceCardID != targetCard.id,
-            let sourceIndex = store.cards.firstIndex(where: { $0.id == sourceCardID }),
-            let destinationIndex = store.cards.firstIndex(where: { $0.id == targetCard.id })
+            let sourceIndex = currentOrder.firstIndex(where: { $0.id == card.id }),
+            currentOrder.indices.contains(sourceIndex + offset)
         else {
             return
         }
 
+        currentOrder.swapAt(sourceIndex, sourceIndex + offset)
+
         withAnimation {
-            store.move(
-                from: IndexSet(integer: sourceIndex),
-                to: destinationIndex > sourceIndex ? destinationIndex + 1 : destinationIndex
-            )
+            store.saveCustomOrder(currentOrder)
+            setSortMode(.custom)
         }
     }
 
