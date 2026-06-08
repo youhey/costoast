@@ -18,6 +18,7 @@ struct BillingCardFormView: View {
     @State private var name: String
     @State private var service: BillingService?
     @State private var sourceType: BillingSourceType?
+    @State private var selectedPlanPresetID: String?
     @State private var planName: String
     @State private var currency: CurrencyCode
     @State private var amountText: String
@@ -54,7 +55,8 @@ struct BillingCardFormView: View {
 
         _name = State(initialValue: card?.name ?? "")
         _service = State(initialValue: card?.service)
-        _sourceType = State(initialValue: Self.requiresAPIUsage(card?.service) ? .apiUsage : card?.sourceType)
+        _sourceType = State(initialValue: Self.initialSourceType(for: card))
+        _selectedPlanPresetID = State(initialValue: Self.initialPlanPresetID(for: card))
         _planName = State(initialValue: card?.planName ?? "")
         _currency = State(initialValue: card?.currency ?? .jpy)
         _amountText = State(initialValue: card?.amount.map(BillingCardFormat.decimal) ?? "")
@@ -91,7 +93,7 @@ struct BillingCardFormView: View {
                     updateSourceTypeForServiceChange(from: previousService, to: selectedService)
                 }
 
-                if !Self.requiresAPIUsage(service) {
+                if Self.allowsSourceTypeSelection(service) {
                     Picker("Source Type", selection: $sourceType) {
                         Text("none").tag(Optional<BillingSourceType>.none)
                         Divider()
@@ -102,6 +104,24 @@ struct BillingCardFormView: View {
                 }
 
                 if sourceType == .subscriptionPlan {
+                    let presets = SubscriptionPlanPresetCatalog.presets(for: service)
+                    if !presets.isEmpty {
+                        Picker("Plan Preset", selection: $selectedPlanPresetID) {
+                            Text("none").tag(Optional<String>.none)
+                            Divider()
+                            ForEach(presets) { preset in
+                                Text(preset.name).tag(Optional(preset.id))
+                            }
+                        }
+                        .onChange(of: selectedPlanPresetID) { _, selectedPresetID in
+                            applySelectedPlanPreset(selectedPresetID)
+                        }
+
+                        Text("Plan amounts are editable because subscription prices may vary by region, billing method, and future price changes.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+
                     TextField("Plan Name", text: $planName)
                 }
 
@@ -441,22 +461,91 @@ struct BillingCardFormView: View {
     }
 
     private func updateSourceTypeForServiceChange(from previousService: BillingService?, to selectedService: BillingService?) {
+        selectedPlanPresetID = nil
+
         if Self.requiresAPIUsage(selectedService) {
             sourceType = .apiUsage
+            resetPlanFields()
             return
         }
 
-        if Self.requiresAPIUsage(previousService) {
-            sourceType = nil
+        if Self.requiresSubscriptionPlan(selectedService) {
+            sourceType = .subscriptionPlan
+            resetPlanFields()
             return
         }
+
+        if !Self.allowsSourceTypeSelection(previousService) {
+            sourceType = nil
+            resetPlanFields()
+            return
+        }
+    }
+
+    private func applySelectedPlanPreset(_ selectedPresetID: String?) {
+        guard
+            let selectedPresetID,
+            let preset = SubscriptionPlanPresetCatalog.presets(for: service).first(where: { $0.id == selectedPresetID })
+        else {
+            return
+        }
+
+        planName = preset.name
+        currency = preset.currency
+        amountText = preset.amount.map(BillingCardFormat.decimal) ?? ""
+        billingCycle = preset.billingCycle
+    }
+
+    private func resetPlanFields() {
+        planName = ""
+        amountText = ""
+        billingCycle = .monthly
+    }
+
+    private static func initialSourceType(for card: BillingCard?) -> BillingSourceType? {
+        if requiresAPIUsage(card?.service) {
+            return .apiUsage
+        }
+
+        if requiresSubscriptionPlan(card?.service) {
+            return .subscriptionPlan
+        }
+
+        return card?.sourceType
+    }
+
+    private static func initialPlanPresetID(for card: BillingCard?) -> String? {
+        guard
+            let card,
+            card.sourceType == .subscriptionPlan,
+            let planName = card.planName
+        else {
+            return nil
+        }
+
+        return SubscriptionPlanPresetCatalog.presets(for: card.service)
+            .first { $0.name == planName }?
+            .id
+    }
+
+    private static func allowsSourceTypeSelection(_ selectedService: BillingService?) -> Bool {
+        !requiresAPIUsage(selectedService) && !requiresSubscriptionPlan(selectedService)
     }
 
     private static func requiresAPIUsage(_ selectedService: BillingService?) -> Bool {
         switch selectedService {
         case .aws, .azure, .gcp, .cloudflare, .openAiApi:
             true
-        case .openAiChatGpt, .openAiCodex, .claude, .claudeCode, .deepl, .youtube, .amazon, .yodobashi, .yahooShopping, .mercari, .manual, .laravelCloud, nil:
+        case .openAiChatGpt, .openAiCodex, .claude, .claudeCode, .deepl, .youtube, .netflix, .appleTvPlus, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .yodobashi, .yahooShopping, .mercari, .manual, .laravelCloud, nil:
+            false
+        }
+    }
+
+    private static func requiresSubscriptionPlan(_ selectedService: BillingService?) -> Bool {
+        switch selectedService {
+        case .openAiChatGpt, .youtube, .netflix, .appleTvPlus, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext:
+            true
+        case .aws, .gcp, .azure, .cloudflare, .laravelCloud, .openAiCodex, .openAiApi, .claude, .claudeCode, .deepl, .yodobashi, .yahooShopping, .mercari, .manual, nil:
             false
         }
     }

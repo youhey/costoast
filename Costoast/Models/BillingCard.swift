@@ -64,7 +64,14 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
     case claudeCode
     case deepl
     case youtube
+    case netflix
+    case appleTvPlus
     case amazon
+    case niconicoPremium
+    case abema
+    case dAnimeStore
+    case dmmTv
+    case uNext
     case yodobashi
     case yahooShopping
     case mercari
@@ -97,9 +104,23 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
         case .deepl:
             "DeepL"
         case .youtube:
-            "YouTube"
+            "YouTube Premium"
+        case .netflix:
+            "Netflix"
+        case .appleTvPlus:
+            "Apple TV+"
         case .amazon:
-            "Amazon"
+            "Amazon Prime"
+        case .niconicoPremium:
+            "niconico Premium"
+        case .abema:
+            "ABEMA"
+        case .dAnimeStore:
+            "d Anime Store"
+        case .dmmTv:
+            "DMM TV"
+        case .uNext:
+            "U-NEXT"
         case .yodobashi:
             "Yodobashi"
         case .yahooShopping:

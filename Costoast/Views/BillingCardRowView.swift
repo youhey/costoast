@@ -86,15 +86,25 @@ struct BillingCardRowView: View {
 
     @ViewBuilder
     private var logoView: some View {
-        Image(card.service.logoAssetName)
-            .resizable()
-            .scaledToFit()
-            .frame(width: 46, height: 46)
-            .frame(width: 78)
-            .frame(maxHeight: .infinity)
-            .padding(.vertical, 8)
-            .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityHidden(true)
+        Group {
+            switch card.service.serviceIcon {
+            case .asset(let assetName):
+                Image(assetName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 46, height: 46)
+            case .symbol(let systemName):
+                Image(systemName: systemName)
+                    .font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 46, height: 46)
+            }
+        }
+        .frame(width: 78)
+        .frame(maxHeight: .infinity)
+        .padding(.vertical, 8)
+        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityHidden(true)
     }
 
     @ViewBuilder
@@ -158,28 +168,43 @@ struct BillingCardRowView: View {
 }
 
 private extension BillingService {
-    var logoAssetName: String {
+    enum ServiceIcon {
+        case asset(String)
+        case symbol(String)
+    }
+
+    var serviceIcon: ServiceIcon {
         switch self {
         case .aws:
-            "LogoAWS"
+            .asset("LogoAWS")
         case .gcp:
-            "LogoGCP"
+            .asset("LogoGCP")
         case .azure:
-            "LogoAzure"
+            .asset("LogoAzure")
         case .cloudflare:
-            "LogoCloudflare"
+            .asset("LogoCloudflare")
         case .laravelCloud:
-            "LogoLaravelCloud"
+            .asset("LogoLaravelCloud")
         case .openAiChatGpt, .openAiCodex, .openAiApi:
-            "LogoOpenAI"
+            .asset("LogoOpenAI")
         case .claude, .claudeCode:
-            "LogoClaude"
+            .asset("LogoClaude")
         case .deepl:
-            "LogoDeepL"
+            .asset("LogoDeepL")
         case .youtube:
-            "LogoYoutube"
-        case .amazon, .yodobashi, .yahooShopping, .mercari, .manual:
-            "LogoUnknown"
+            .asset("LogoYoutube")
+        case .netflix, .uNext:
+            .symbol("play.tv.fill")
+        case .appleTvPlus, .dAnimeStore, .dmmTv:
+            .symbol("tv.fill")
+        case .amazon:
+            .symbol("shippingbox.fill")
+        case .niconicoPremium:
+            .symbol("play.square.fill")
+        case .abema:
+            .symbol("play.rectangle.fill")
+        case .yodobashi, .yahooShopping, .mercari, .manual:
+            .asset("LogoUnknown")
         }
     }
 }
