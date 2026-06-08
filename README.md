@@ -14,6 +14,7 @@ Implemented:
 - Show Manual Amount and Subscription Plan billing values.
 - Fetch initial OpenAI API and AWS Cost Explorer billing data from separated providers.
 - Store API keys and secrets in macOS Keychain.
+- Use the fixed AWS Cost Explorer endpoint in `us-east-1`.
 
 Not implemented yet:
 

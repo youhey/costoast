@@ -8,6 +8,8 @@
 import Foundation
 
 struct AWSBillingProvider: BillingProvider {
+    private let costExplorerRegion = "us-east-1"
+
     let service: BillingService = .aws
 
     func fetchBilling(for card: BillingCard, credentials: BillingCredentials?) async throws -> BillingProviderResult {
@@ -18,7 +20,6 @@ struct AWSBillingProvider: BillingProvider {
             throw BillingProviderError.notConfigured("AWS credentials are not configured.")
         }
 
-        let region = credentials?.awsRegion?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "us-east-1"
         let period = BillingPeriodCalculator.currentMonth()
         guard let periodStart = period.start, let nextBillingDate = period.nextBillingDate, let periodEnd = period.end else {
             throw BillingProviderError.parseFailure("Billing period could not be calculated.")
@@ -40,7 +41,7 @@ struct AWSBillingProvider: BillingProvider {
         ]
 
         let bodyData = try JSONSerialization.data(withJSONObject: requestBody)
-        var request = URLRequest(url: URL(string: "https://ce.\(region).amazonaws.com/")!)
+        var request = URLRequest(url: URL(string: "https://ce.\(costExplorerRegion).amazonaws.com/")!)
         request.httpMethod = "POST"
         request.httpBody = bodyData
         request.setValue("application/x-amz-json-1.1", forHTTPHeaderField: "Content-Type")
@@ -51,7 +52,7 @@ struct AWSBillingProvider: BillingProvider {
             body: bodyData,
             accessKeyID: accessKeyID,
             secretAccessKey: secretAccessKey,
-            region: region,
+            region: costExplorerRegion,
             service: "ce"
         )
 
@@ -144,11 +145,5 @@ private struct AWSErrorResponse: Decodable {
 
     static func message(from data: Data) -> String? {
         try? JSONDecoder().decode(Self.self, from: data).message
-    }
-}
-
-private extension String {
-    var nilIfEmpty: String? {
-        isEmpty ? nil : self
     }
 }

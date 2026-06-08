@@ -27,7 +27,6 @@ struct BillingCardFormView: View {
     @State private var organizationID: String = ""
     @State private var awsAccessKeyID: String = ""
     @State private var awsSecretAccessKey: String = ""
-    @State private var awsRegion: String = "us-east-1"
     @State private var credentialError: String?
 
     init(
@@ -141,7 +140,6 @@ struct BillingCardFormView: View {
             Section("AWS Credentials") {
                 TextField("Access Key ID", text: $awsAccessKeyID)
                 SecureField("Secret Access Key", text: $awsSecretAccessKey)
-                TextField("Region", text: $awsRegion)
                 Text("Used to fetch AWS cost data from Cost Explorer.\nStored securely in macOS Keychain.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -263,7 +261,6 @@ struct BillingCardFormView: View {
             organizationID = credentials.organizationID ?? ""
             awsAccessKeyID = credentials.awsAccessKeyID ?? ""
             awsSecretAccessKey = credentials.awsSecretAccessKey ?? ""
-            awsRegion = credentials.awsRegion ?? "us-east-1"
             credentialError = nil
         } catch {
             credentialError = error.localizedDescription
@@ -289,7 +286,7 @@ struct BillingCardFormView: View {
                     organizationID: nil,
                     awsAccessKeyID: awsAccessKeyID.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
                     awsSecretAccessKey: awsSecretAccessKey.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
-                    awsRegion: awsRegion.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "us-east-1"
+                    awsRegion: "us-east-1"
                 ),
                 for: card.id
             )
