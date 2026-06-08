@@ -40,7 +40,6 @@ struct BillingCardFormView: View {
     @State private var cloudflareAccountID: String
     @State private var cloudflareApiToken: String = ""
     @State private var credentialError: String?
-    @State private var automaticallySelectedSourceType = false
 
     init(
         card: BillingCard?,
@@ -55,7 +54,7 @@ struct BillingCardFormView: View {
 
         _name = State(initialValue: card?.name ?? "")
         _service = State(initialValue: card?.service)
-        _sourceType = State(initialValue: card?.sourceType)
+        _sourceType = State(initialValue: Self.requiresAPIUsage(card?.service) ? .apiUsage : card?.sourceType)
         _planName = State(initialValue: card?.planName ?? "")
         _currency = State(initialValue: card?.currency ?? .jpy)
         _amountText = State(initialValue: card?.amount.map(BillingCardFormat.decimal) ?? "")
@@ -88,15 +87,17 @@ struct BillingCardFormView: View {
                         Text(service.displayName).tag(Optional(service))
                     }
                 }
-                .onChange(of: service) { _, selectedService in
-                    updateSourceTypeForServiceChange(selectedService)
+                .onChange(of: service) { previousService, selectedService in
+                    updateSourceTypeForServiceChange(from: previousService, to: selectedService)
                 }
 
-                Picker("Source Type", selection: $sourceType) {
-                    Text("none").tag(Optional<BillingSourceType>.none)
-                    Divider()
-                    ForEach(BillingSourceType.allCases) { sourceType in
-                        Text(sourceType.displayName).tag(Optional(sourceType))
+                if !Self.requiresAPIUsage(service) {
+                    Picker("Source Type", selection: $sourceType) {
+                        Text("none").tag(Optional<BillingSourceType>.none)
+                        Divider()
+                        ForEach(BillingSourceType.allCases) { sourceType in
+                            Text(sourceType.displayName).tag(Optional(sourceType))
+                        }
                     }
                 }
 
@@ -439,55 +440,25 @@ struct BillingCardFormView: View {
         }
     }
 
-    private func updateSourceTypeForServiceChange(_ selectedService: BillingService?) {
-        guard card == nil else {
+    private func updateSourceTypeForServiceChange(from previousService: BillingService?, to selectedService: BillingService?) {
+        if Self.requiresAPIUsage(selectedService) {
+            sourceType = .apiUsage
             return
         }
 
-        if automaticallySelectedSourceType && sourceType != .apiUsage {
-            automaticallySelectedSourceType = false
-        }
-
-        if automaticallySelectedSourceType && !usesDefaultAPIUsage(selectedService) {
+        if Self.requiresAPIUsage(previousService) {
             sourceType = nil
-            automaticallySelectedSourceType = false
             return
         }
+    }
 
-        guard sourceType == nil,
-              isOnlyNameEntered,
-              usesDefaultAPIUsage(selectedService) else {
-            return
+    private static func requiresAPIUsage(_ selectedService: BillingService?) -> Bool {
+        switch selectedService {
+        case .aws, .azure, .gcp, .cloudflare, .openAiApi:
+            true
+        case .openAiChatGpt, .openAiCodex, .claude, .claudeCode, .deepl, .youtube, .amazon, .yodobashi, .yahooShopping, .mercari, .manual, .laravelCloud, nil:
+            false
         }
-
-        sourceType = .apiUsage
-        automaticallySelectedSourceType = true
-    }
-
-    private func usesDefaultAPIUsage(_ selectedService: BillingService?) -> Bool {
-        selectedService == .aws || selectedService == .openAiApi
-    }
-
-    private var isOnlyNameEntered: Bool {
-        trimmedPlanName.isEmpty &&
-            trimmedAmountText.isEmpty &&
-            trimmedBillingStartDayText.isEmpty &&
-            trimmedGCPProjectID.isEmpty &&
-            trimmedGCPDatasetID.isEmpty &&
-            trimmedGCPTableName.isEmpty &&
-            trimmedGCPBillingAccountID.isEmpty &&
-            gcpServiceAccountJSON.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            trimmedAzureTenantID.isEmpty &&
-            trimmedAzureClientID.isEmpty &&
-            trimmedAzureSubscriptionID.isEmpty &&
-            trimmedAzureScope.isEmpty &&
-            azureClientSecret.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            trimmedCloudflareAccountID.isEmpty &&
-            cloudflareApiToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            organizationID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            awsAccessKeyID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            awsSecretAccessKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func saveCredentials(for card: BillingCard) throws {
