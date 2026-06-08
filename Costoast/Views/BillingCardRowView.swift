@@ -40,7 +40,7 @@ struct BillingCardRowView: View {
                 }
 
                 if let amount = card.amount {
-                    Text("Amount: \(card.currency.rawValue) \(BillingCardFormat.decimal(amount))")
+                    Text("Amount: \(BillingCardFormat.money(Money(value: amount, currency: card.currency)))")
                 }
 
                 if card.sourceType == .subscriptionPlan || card.sourceType == .manualAmount {
@@ -77,7 +77,7 @@ struct BillingCardRowView: View {
         } else if let result = card.lastBillingResult {
             resultView(result)
         } else if let amount = card.amount, card.sourceType == .manualAmount || card.sourceType == .subscriptionPlan {
-            Text("Original: \(card.currency.rawValue) \(BillingCardFormat.decimal(amount))")
+            originalAmountView(Money(value: amount, currency: card.currency))
         } else if card.sourceType == .apiUsage {
             Text("Not configured")
                 .foregroundStyle(.secondary)
@@ -94,14 +94,28 @@ struct BillingCardRowView: View {
         }
 
         if let originalAmount = result.originalAmount {
-            Text("Original: \(originalAmount.currency.rawValue) \(BillingCardFormat.decimal(originalAmount.value))")
+            originalAmountView(originalAmount)
         } else {
             Text(result.message ?? "Amount unavailable.")
                 .foregroundStyle(.secondary)
         }
 
-        Text("Updated: \(Self.dateTimeFormatter.string(from: result.fetchedAt))")
+        Text("Updated: \(BillingCardFormat.jstDateTime(result.fetchedAt))")
             .foregroundStyle(.secondary)
+    }
+
+    @ViewBuilder
+    private func originalAmountView(_ originalAmount: Money) -> some View {
+        Text("Original: \(BillingCardFormat.money(originalAmount))")
+
+        if let convertedAmount = card.lastConvertedAmount, convertedAmount.original == originalAmount {
+            Text("JPY est.: \(BillingCardFormat.jpy(convertedAmount.jpyAmount))")
+            Text("Rate: \(BillingCardFormat.decimal(convertedAmount.rate))")
+                .foregroundStyle(.secondary)
+        } else if card.lastConversionError != nil {
+            Text("JPY conversion unavailable")
+                .foregroundStyle(.secondary)
+        }
     }
 
     private static let dateOnlyFormatter: DateFormatter = {
@@ -110,11 +124,6 @@ struct BillingCardRowView: View {
         return formatter
     }()
 
-    private static let dateTimeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm z"
-        return formatter
-    }()
 }
 
 #Preview {
@@ -132,6 +141,8 @@ struct BillingCardRowView: View {
             billingStartDay: nil,
             lastBillingResult: nil,
             lastRefreshError: nil,
+            lastConvertedAmount: nil,
+            lastConversionError: nil,
             createdAt: Date(),
             updatedAt: Date()
         ),

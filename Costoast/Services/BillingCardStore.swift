@@ -98,6 +98,35 @@ final class BillingCardStore: ObservableObject {
         save()
     }
 
+    func updateConversion(_ convertedAmount: ConvertedAmount?, errorMessage: String?, for cardID: UUID) {
+        guard let index = cards.firstIndex(where: { $0.id == cardID }) else {
+            return
+        }
+
+        cards[index].lastConvertedAmount = convertedAmount
+        cards[index].lastConversionError = errorMessage
+        cards[index].updatedAt = Date()
+        save()
+    }
+
+    func updateConversionErrors(_ errorMessage: String, for cardIDs: [UUID]) {
+        guard !cardIDs.isEmpty else {
+            return
+        }
+
+        for cardID in cardIDs {
+            guard let index = cards.firstIndex(where: { $0.id == cardID }) else {
+                continue
+            }
+
+            cards[index].lastConvertedAmount = nil
+            cards[index].lastConversionError = errorMessage
+            cards[index].updatedAt = Date()
+        }
+
+        save()
+    }
+
     func move(from source: IndexSet, to destination: Int) {
         guard !source.isEmpty else {
             return

@@ -231,6 +231,8 @@ struct BillingCardFormView: View {
             billingStartDay: parsedBillingStartDay,
             lastBillingResult: card?.lastBillingResult,
             lastRefreshError: card?.lastRefreshError,
+            lastConvertedAmount: card?.lastConvertedAmount,
+            lastConversionError: card?.lastConversionError,
             createdAt: card?.createdAt ?? now,
             updatedAt: now
         )
