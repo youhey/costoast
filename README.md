@@ -4,6 +4,15 @@ Your costs, served fresh.
 
 Costoast is a tiny macOS dashboard for checking active web service costs at a glance.
 
+![Costoast dashboard screenshot](docs/images/dashboard.png)
+
+Current implementation:
+
+- macOS SwiftUI dashboard with card and compact list views.
+- Local card settings, display order, and credentials storage support.
+- API usage, subscription plan, and manual amount card sources.
+- JPY conversion, monthly total summary, service groups, and basic sorting.
+
 This repository is currently adding service billing providers on top of the card dashboard, total cost, and JPY conversion base.
 
 Implemented:
