@@ -6,8 +6,11 @@
 //
 
 import Foundation
+import os
 
 struct OpenAIAPIUsageProvider: BillingProvider {
+    private static let logger = Logger(subsystem: "youhey.Costoast", category: "OpenAIAPIUsageProvider")
+
     let service: BillingService = .openAiApi
 
     func fetchBilling(for card: BillingCard, credentials: BillingCredentials?) async throws -> BillingProviderResult {
@@ -54,25 +57,27 @@ struct OpenAIAPIUsageProvider: BillingProvider {
             throw BillingProviderError.network(message)
         }
 
+        let costs: OpenAICostsResponse
         do {
-            let costs = try JSONDecoder().decode(OpenAICostsResponse.self, from: data)
-            let money = try costs.totalMoney()
-
-            return BillingProviderResult(
-                periodStart: periodStart,
-                periodEnd: periodEnd,
-                nextBillingDate: period.nextBillingDate,
-                originalAmount: money,
-                amountKind: .usageToDate,
-                fetchedAt: Date(),
-                dataFreshness: .daily,
-                message: nil
-            )
-        } catch let providerError as BillingProviderError {
-            throw providerError
+            costs = try JSONDecoder().decode(OpenAICostsResponse.self, from: data)
         } catch {
-            throw BillingProviderError.parseFailure("OpenAI cost response could not be parsed.")
+            let requestID = httpResponse.value(forHTTPHeaderField: "x-request-id") ?? "unknown"
+            Self.logger.debug("OpenAI costs response decode failed. status=\(httpResponse.statusCode, privacy: .public) requestID=\(requestID, privacy: .public) error=\(String(describing: error), privacy: .public)")
+            throw BillingProviderError.parseFailure("OpenAI cost response could not be parsed. See debug console for decode details.")
         }
+
+        let money = try costs.totalMoney()
+
+        return BillingProviderResult(
+            periodStart: periodStart,
+            periodEnd: periodEnd,
+            nextBillingDate: period.nextBillingDate,
+            originalAmount: money,
+            amountKind: .usageToDate,
+            fetchedAt: Date(),
+            dataFreshness: .daily,
+            message: nil
+        )
     }
 }
 
@@ -98,7 +103,7 @@ private struct OpenAICostsResponse: Decodable {
                     throw BillingProviderError.parseFailure("OpenAI returned multiple currencies.")
                 }
 
-                total += Decimal(value)
+                total += value
             }
         }
 
@@ -119,8 +124,39 @@ private struct OpenAICostResult: Decodable {
 }
 
 private struct OpenAICostAmount: Decodable {
-    var value: Double?
+    var value: Decimal?
     var currency: String?
+
+    enum CodingKeys: String, CodingKey {
+        case value
+        case currency
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        currency = try container.decodeIfPresent(String.self, forKey: .currency)
+
+        if try container.decodeNil(forKey: .value) {
+            value = nil
+        } else if let decimal = try? container.decode(Decimal.self, forKey: .value) {
+            value = decimal
+        } else if let string = try? container.decode(String.self, forKey: .value) {
+            guard let decimal = Decimal(string: string, locale: Locale(identifier: "en_US_POSIX")) else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .value,
+                    in: container,
+                    debugDescription: "Expected a decimal string for amount value."
+                )
+            }
+            value = decimal
+        } else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .value,
+                in: container,
+                debugDescription: "Expected a number or decimal string for amount value."
+            )
+        }
+    }
 }
 
 private struct OpenAIErrorResponse: Decodable {
