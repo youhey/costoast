@@ -15,6 +15,9 @@ final class BillingProviderRegistry {
     private let gcpProvider = GCPBillingProvider()
     private let azureProvider = AzureBillingProvider()
     private let cloudflareProvider = CloudflareBillingProvider()
+    private let laravelCloudProvider = LaravelCloudBillingProvider()
+    private let openAICodexProvider = OpenAICodexBillingProvider()
+    private let deepLAPIProvider = DeepLAPIBillingProvider()
     private let unsupportedProvider = UnsupportedBillingProvider()
 
     func provider(for card: BillingCard) -> BillingProvider {
@@ -35,6 +38,12 @@ final class BillingProviderRegistry {
                 azureProvider
             case .cloudflare:
                 cloudflareProvider
+            case .laravelCloud:
+                laravelCloudProvider
+            case .openAiCodex:
+                openAICodexProvider
+            case .deepLApi:
+                deepLAPIProvider
             default:
                 unsupportedProvider
             }

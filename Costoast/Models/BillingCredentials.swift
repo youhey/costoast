@@ -20,6 +20,8 @@ struct BillingCredentials: Codable, Equatable {
     var azureClientSecret: String?
 
     var cloudflareApiToken: String?
+    var laravelCloudApiToken: String?
+    var deepLApiKey: String?
 
     var isEmpty: Bool {
         [
@@ -30,7 +32,9 @@ struct BillingCredentials: Codable, Equatable {
             awsRegion,
             gcpServiceAccountJSON,
             azureClientSecret,
-            cloudflareApiToken
+            cloudflareApiToken,
+            laravelCloudApiToken,
+            deepLApiKey
         ]
             .allSatisfy { ($0 ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }

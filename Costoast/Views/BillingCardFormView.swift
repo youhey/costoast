@@ -42,6 +42,21 @@ struct BillingCardFormView: View {
     @State private var azureClientSecret: String = ""
     @State private var cloudflareAccountID: String
     @State private var cloudflareApiToken: String = ""
+    @State private var laravelCloudOrganizationID: String
+    @State private var laravelCloudApiToken: String = ""
+    @State private var openAICodexOrganizationID: String
+    @State private var openAICodexProjectID: String
+    @State private var openAICodexAPIKeyID: String
+    @State private var openAICodexLineItemFilter: String
+    @State private var openAICodexAdminAPIKey: String = ""
+    @State private var deepLAPIPlanType: DeepLAPIPlanType
+    @State private var deepLMonthlyBaseAmountText: String
+    @State private var deepLMonthlyBaseCurrency: CurrencyCode
+    @State private var deepLIncludedCharactersText: String
+    @State private var deepLOverageUnitCharactersText: String
+    @State private var deepLOverageUnitAmountText: String
+    @State private var deepLOverageCurrency: CurrencyCode
+    @State private var deepLApiKey: String = ""
     @State private var credentialError: String?
 
     init(
@@ -74,6 +89,18 @@ struct BillingCardFormView: View {
         _azureSubscriptionID = State(initialValue: card?.azureConfiguration?.subscriptionID ?? "")
         _azureScope = State(initialValue: card?.azureConfiguration?.scope ?? "")
         _cloudflareAccountID = State(initialValue: card?.cloudflareConfiguration?.accountID ?? "")
+        _laravelCloudOrganizationID = State(initialValue: card?.laravelCloudConfiguration?.organizationID ?? "")
+        _openAICodexOrganizationID = State(initialValue: card?.openAICodexConfiguration?.organizationID ?? "")
+        _openAICodexProjectID = State(initialValue: card?.openAICodexConfiguration?.projectID ?? "")
+        _openAICodexAPIKeyID = State(initialValue: card?.openAICodexConfiguration?.apiKeyID ?? "")
+        _openAICodexLineItemFilter = State(initialValue: card?.openAICodexConfiguration?.lineItemFilter ?? "codex")
+        _deepLAPIPlanType = State(initialValue: card?.deepLAPIConfiguration?.apiPlanType ?? .free)
+        _deepLMonthlyBaseAmountText = State(initialValue: card?.deepLAPIConfiguration?.monthlyBaseAmount.map(BillingCardFormat.decimal) ?? "")
+        _deepLMonthlyBaseCurrency = State(initialValue: card?.deepLAPIConfiguration?.monthlyBaseCurrency ?? .jpy)
+        _deepLIncludedCharactersText = State(initialValue: card?.deepLAPIConfiguration?.includedCharacters.map(String.init) ?? "")
+        _deepLOverageUnitCharactersText = State(initialValue: card?.deepLAPIConfiguration?.overageUnitCharacters.map(String.init) ?? "")
+        _deepLOverageUnitAmountText = State(initialValue: card?.deepLAPIConfiguration?.overageUnitAmount.map(BillingCardFormat.decimal) ?? "")
+        _deepLOverageCurrency = State(initialValue: card?.deepLAPIConfiguration?.overageCurrency ?? .jpy)
     }
 
     var body: some View {
@@ -218,6 +245,48 @@ struct BillingCardFormView: View {
             Section("Cloudflare Billing") {
                 TextField("Account ID", text: $cloudflareAccountID)
             }
+        } else if sourceType == .apiUsage && service == .laravelCloud {
+            Section("Laravel Cloud Usage") {
+                TextField("Organization ID", text: $laravelCloudOrganizationID)
+                Text("Organization ID is optional and only used when the API response supports organization scoping.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        } else if sourceType == .apiUsage && service == .openAiCodex {
+            Section("OpenAI Codex Cost Filter") {
+                TextField("Organization ID", text: $openAICodexOrganizationID)
+                TextField("Project ID", text: $openAICodexProjectID)
+                TextField("API Key ID", text: $openAICodexAPIKeyID)
+                TextField("Line Item Filter", text: $openAICodexLineItemFilter)
+                Text("Codex costs are only shown when a line item, project ID, or API key ID filter identifies matching costs.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        } else if sourceType == .apiUsage && service == .deepLApi {
+            Section("DeepL API Pricing Estimate") {
+                Picker("API Plan Type", selection: $deepLAPIPlanType) {
+                    ForEach(DeepLAPIPlanType.allCases) { planType in
+                        Text(planType.displayName).tag(planType)
+                    }
+                }
+                TextField("Monthly Base Amount", text: $deepLMonthlyBaseAmountText)
+                Picker("Monthly Base Currency", selection: $deepLMonthlyBaseCurrency) {
+                    ForEach(CurrencyCode.allCases) { currency in
+                        Text(currency.rawValue).tag(currency)
+                    }
+                }
+                TextField("Included Characters", text: $deepLIncludedCharactersText)
+                TextField("Overage Unit Characters", text: $deepLOverageUnitCharactersText)
+                TextField("Overage Unit Amount", text: $deepLOverageUnitAmountText)
+                Picker("Overage Currency", selection: $deepLOverageCurrency) {
+                    ForEach(CurrencyCode.allCases) { currency in
+                        Text(currency.rawValue).tag(currency)
+                    }
+                }
+                Text("If pricing details are incomplete, DeepL API usage is shown without adding the card to Total.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -262,6 +331,27 @@ struct BillingCardFormView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+        } else if sourceType == .apiUsage && service == .laravelCloud {
+            Section("Laravel Cloud Credentials") {
+                SecureField("API Token", text: $laravelCloudApiToken)
+                Text("Used to fetch Laravel Cloud usage. Stored securely in macOS Keychain.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        } else if sourceType == .apiUsage && service == .openAiCodex {
+            Section("OpenAI Codex Credentials") {
+                SecureField("Admin API Key", text: $openAICodexAdminAPIKey)
+                Text("Used to fetch OpenAI organization costs. Stored securely in macOS Keychain.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        } else if sourceType == .apiUsage && service == .deepLApi {
+            Section("DeepL API Credentials") {
+                SecureField("API Key", text: $deepLApiKey)
+                Text("Used to fetch DeepL API usage. Stored securely in macOS Keychain.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -303,6 +393,19 @@ struct BillingCardFormView: View {
                 }
             } else if service == .cloudflare && trimmedCloudflareAccountID.isEmpty {
                 messages.append("Cloudflare Account ID is required.")
+            } else if service == .deepLApi {
+                if !trimmedDeepLMonthlyBaseAmountText.isEmpty && parsedDeepLMonthlyBaseAmount == nil {
+                    messages.append("DeepL Monthly Base Amount must be a valid number.")
+                }
+                if !trimmedDeepLIncludedCharactersText.isEmpty && parsedDeepLIncludedCharacters == nil {
+                    messages.append("DeepL Included Characters must be a valid number.")
+                }
+                if !trimmedDeepLOverageUnitCharactersText.isEmpty && parsedDeepLOverageUnitCharacters == nil {
+                    messages.append("DeepL Overage Unit Characters must be a valid number.")
+                }
+                if !trimmedDeepLOverageUnitAmountText.isEmpty && parsedDeepLOverageUnitAmount == nil {
+                    messages.append("DeepL Overage Unit Amount must be a valid number.")
+                }
             }
         }
 
@@ -389,6 +492,42 @@ struct BillingCardFormView: View {
         cloudflareAccountID.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var trimmedLaravelCloudOrganizationID: String {
+        laravelCloudOrganizationID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedOpenAICodexOrganizationID: String {
+        openAICodexOrganizationID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedOpenAICodexProjectID: String {
+        openAICodexProjectID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedOpenAICodexAPIKeyID: String {
+        openAICodexAPIKeyID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedOpenAICodexLineItemFilter: String {
+        openAICodexLineItemFilter.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedDeepLMonthlyBaseAmountText: String {
+        deepLMonthlyBaseAmountText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedDeepLIncludedCharactersText: String {
+        deepLIncludedCharactersText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedDeepLOverageUnitCharactersText: String {
+        deepLOverageUnitCharactersText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedDeepLOverageUnitAmountText: String {
+        deepLOverageUnitAmountText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private var parsedAmount: Decimal? {
         guard !trimmedAmountText.isEmpty else {
             return nil
@@ -403,6 +542,42 @@ struct BillingCardFormView: View {
         }
 
         return Int(trimmedBillingStartDayText)
+    }
+
+    private var parsedDeepLMonthlyBaseAmount: Decimal? {
+        parsedDecimal(from: trimmedDeepLMonthlyBaseAmountText)
+    }
+
+    private var parsedDeepLIncludedCharacters: Int? {
+        parsedPositiveInt(from: trimmedDeepLIncludedCharactersText)
+    }
+
+    private var parsedDeepLOverageUnitCharacters: Int? {
+        parsedPositiveInt(from: trimmedDeepLOverageUnitCharactersText)
+    }
+
+    private var parsedDeepLOverageUnitAmount: Decimal? {
+        parsedDecimal(from: trimmedDeepLOverageUnitAmountText)
+    }
+
+    private func parsedDecimal(from text: String) -> Decimal? {
+        guard !text.isEmpty else {
+            return nil
+        }
+
+        guard let decimal = Decimal(string: text.replacingOccurrences(of: ",", with: "")) else {
+            return nil
+        }
+
+        return NSDecimalNumber(decimal: decimal).compare(NSDecimalNumber.zero) == .orderedAscending ? nil : decimal
+    }
+
+    private func parsedPositiveInt(from text: String) -> Int? {
+        guard !text.isEmpty, let value = Int(text.replacingOccurrences(of: ",", with: "")), value > 0 else {
+            return nil
+        }
+
+        return value
     }
 
     private func save() {
@@ -431,6 +606,24 @@ struct BillingCardFormView: View {
         let cloudflareConfiguration = service == .cloudflare && sourceType == .apiUsage ? CloudflareBillingConfiguration(
             accountID: trimmedCloudflareAccountID
         ) : nil
+        let laravelCloudConfiguration = service == .laravelCloud && sourceType == .apiUsage ? LaravelCloudBillingConfiguration(
+            organizationID: trimmedLaravelCloudOrganizationID.nilIfEmpty
+        ) : nil
+        let openAICodexConfiguration = service == .openAiCodex && sourceType == .apiUsage ? OpenAICodexBillingConfiguration(
+            organizationID: trimmedOpenAICodexOrganizationID.nilIfEmpty,
+            projectID: trimmedOpenAICodexProjectID.nilIfEmpty,
+            apiKeyID: trimmedOpenAICodexAPIKeyID.nilIfEmpty,
+            lineItemFilter: trimmedOpenAICodexLineItemFilter.nilIfEmpty
+        ) : nil
+        let deepLAPIConfiguration = service == .deepLApi && sourceType == .apiUsage ? DeepLAPIBillingConfiguration(
+            apiPlanType: deepLAPIPlanType,
+            monthlyBaseAmount: parsedDeepLMonthlyBaseAmount,
+            monthlyBaseCurrency: deepLMonthlyBaseCurrency,
+            includedCharacters: parsedDeepLIncludedCharacters,
+            overageUnitCharacters: parsedDeepLOverageUnitCharacters,
+            overageUnitAmount: parsedDeepLOverageUnitAmount,
+            overageCurrency: deepLOverageCurrency
+        ) : nil
 
         let billingCard = BillingCard(
             id: card?.id ?? UUID(),
@@ -446,6 +639,9 @@ struct BillingCardFormView: View {
             gcpConfiguration: gcpConfiguration,
             azureConfiguration: azureConfiguration,
             cloudflareConfiguration: cloudflareConfiguration,
+            laravelCloudConfiguration: laravelCloudConfiguration,
+            openAICodexConfiguration: openAICodexConfiguration,
+            deepLAPIConfiguration: deepLAPIConfiguration,
             lastBillingResult: card?.lastBillingResult,
             lastRefreshError: card?.lastRefreshError,
             lastConvertedAmount: card?.lastConvertedAmount,
@@ -483,6 +679,9 @@ struct BillingCardFormView: View {
             gcpServiceAccountJSON = credentials.gcpServiceAccountJSON ?? ""
             azureClientSecret = credentials.azureClientSecret ?? ""
             cloudflareApiToken = credentials.cloudflareApiToken ?? ""
+            laravelCloudApiToken = credentials.laravelCloudApiToken ?? ""
+            openAICodexAdminAPIKey = credentials.apiKey ?? ""
+            deepLApiKey = credentials.deepLApiKey ?? ""
             credentialError = nil
         } catch {
             credentialError = error.localizedDescription
@@ -604,7 +803,14 @@ struct BillingCardFormView: View {
 
     private static func supportedSourceTypes(for selectedService: BillingService?) -> [BillingSourceType] {
         if requiresAPIUsage(selectedService) {
-            return [.apiUsage]
+            switch selectedService {
+            case .laravelCloud:
+                return [.apiUsage, .manualAmount]
+            case .openAiCodex, .deepLApi:
+                return [.apiUsage, .subscriptionPlan, .manualAmount]
+            default:
+                return [.apiUsage]
+            }
         }
 
         if defaultsToSubscriptionPlan(selectedService) {
@@ -616,18 +822,18 @@ struct BillingCardFormView: View {
 
     private static func requiresAPIUsage(_ selectedService: BillingService?) -> Bool {
         switch selectedService {
-        case .aws, .azure, .gcp, .cloudflare, .openAiApi:
+        case .aws, .azure, .gcp, .cloudflare, .openAiApi, .laravelCloud, .openAiCodex, .deepLApi:
             true
-        case .laravelCloud, .githubCopilot, .openAiChatGpt, .openAiCodex, .claude, .claudeCode, .deepl, .adobeCreativeCloud, .dropbox, .youtube, .netflix, .disneyPlus, .appleTvPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual, nil:
+        case .githubCopilot, .openAiChatGpt, .claude, .claudeCode, .deepl, .adobeCreativeCloud, .dropbox, .youtube, .netflix, .disneyPlus, .appleTvPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword, .pixiv, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual, nil:
             false
         }
     }
 
     private static func defaultsToSubscriptionPlan(_ selectedService: BillingService?) -> Bool {
         switch selectedService {
-        case .openAiChatGpt, .githubCopilot, .deepl, .adobeCreativeCloud, .dropbox, .youtube, .netflix, .disneyPlus, .appleTvPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword:
+        case .openAiChatGpt, .githubCopilot, .deepl, .adobeCreativeCloud, .dropbox, .youtube, .netflix, .disneyPlus, .appleTvPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword, .pixiv:
             true
-        case .aws, .gcp, .azure, .cloudflare, .laravelCloud, .openAiCodex, .openAiApi, .claude, .claudeCode, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual, nil:
+        case .aws, .gcp, .azure, .cloudflare, .laravelCloud, .openAiCodex, .openAiApi, .claude, .claudeCode, .deepLApi, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual, nil:
             false
         }
     }
@@ -647,7 +853,9 @@ struct BillingCardFormView: View {
                     awsRegion: nil,
                     gcpServiceAccountJSON: nil,
                     azureClientSecret: nil,
-                    cloudflareApiToken: nil
+                    cloudflareApiToken: nil,
+                    laravelCloudApiToken: nil,
+                    deepLApiKey: nil
                 ),
                 for: card.id
             )
@@ -661,7 +869,9 @@ struct BillingCardFormView: View {
                     awsRegion: "us-east-1",
                     gcpServiceAccountJSON: nil,
                     azureClientSecret: nil,
-                    cloudflareApiToken: nil
+                    cloudflareApiToken: nil,
+                    laravelCloudApiToken: nil,
+                    deepLApiKey: nil
                 ),
                 for: card.id
             )
@@ -675,7 +885,9 @@ struct BillingCardFormView: View {
                     awsRegion: nil,
                     gcpServiceAccountJSON: gcpServiceAccountJSON.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
                     azureClientSecret: nil,
-                    cloudflareApiToken: nil
+                    cloudflareApiToken: nil,
+                    laravelCloudApiToken: nil,
+                    deepLApiKey: nil
                 ),
                 for: card.id
             )
@@ -689,7 +901,9 @@ struct BillingCardFormView: View {
                     awsRegion: nil,
                     gcpServiceAccountJSON: nil,
                     azureClientSecret: azureClientSecret.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
-                    cloudflareApiToken: nil
+                    cloudflareApiToken: nil,
+                    laravelCloudApiToken: nil,
+                    deepLApiKey: nil
                 ),
                 for: card.id
             )
@@ -703,7 +917,57 @@ struct BillingCardFormView: View {
                     awsRegion: nil,
                     gcpServiceAccountJSON: nil,
                     azureClientSecret: nil,
-                    cloudflareApiToken: cloudflareApiToken.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+                    cloudflareApiToken: cloudflareApiToken.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    laravelCloudApiToken: nil,
+                    deepLApiKey: nil
+                ),
+                for: card.id
+            )
+        } else if sourceType == .apiUsage && service == .laravelCloud {
+            try credentialStore.saveCredentials(
+                BillingCredentials(
+                    apiKey: nil,
+                    organizationID: nil,
+                    awsAccessKeyID: nil,
+                    awsSecretAccessKey: nil,
+                    awsRegion: nil,
+                    gcpServiceAccountJSON: nil,
+                    azureClientSecret: nil,
+                    cloudflareApiToken: nil,
+                    laravelCloudApiToken: laravelCloudApiToken.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    deepLApiKey: nil
+                ),
+                for: card.id
+            )
+        } else if sourceType == .apiUsage && service == .openAiCodex {
+            try credentialStore.saveCredentials(
+                BillingCredentials(
+                    apiKey: openAICodexAdminAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    organizationID: trimmedOpenAICodexOrganizationID.nilIfEmpty,
+                    awsAccessKeyID: nil,
+                    awsSecretAccessKey: nil,
+                    awsRegion: nil,
+                    gcpServiceAccountJSON: nil,
+                    azureClientSecret: nil,
+                    cloudflareApiToken: nil,
+                    laravelCloudApiToken: nil,
+                    deepLApiKey: nil
+                ),
+                for: card.id
+            )
+        } else if sourceType == .apiUsage && service == .deepLApi {
+            try credentialStore.saveCredentials(
+                BillingCredentials(
+                    apiKey: nil,
+                    organizationID: nil,
+                    awsAccessKeyID: nil,
+                    awsSecretAccessKey: nil,
+                    awsRegion: nil,
+                    gcpServiceAccountJSON: nil,
+                    azureClientSecret: nil,
+                    cloudflareApiToken: nil,
+                    laravelCloudApiToken: nil,
+                    deepLApiKey: deepLApiKey.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
                 ),
                 for: card.id
             )

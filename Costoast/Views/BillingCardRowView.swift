@@ -213,6 +213,8 @@ private extension BillingService {
             .asset("LogoClaude")
         case .deepl:
             .asset("LogoDeepL")
+        case .deepLApi:
+            .asset("LogoDeepL")
         case .adobeCreativeCloud:
             .asset("LogoAdobe")
         case .dropbox:
@@ -271,6 +273,8 @@ private extension BillingService {
             .asset("LogoMicrosoft365")
         case .onePassword:
             .asset("Logo1Password")
+        case .pixiv:
+            .symbol("paintbrush.fill")
         case .amazonShopping:
             .asset("LogoAmazon")
         case .yahooShopping:
@@ -330,6 +334,9 @@ private extension BillingService {
             gcpConfiguration: nil,
             azureConfiguration: nil,
             cloudflareConfiguration: nil,
+            laravelCloudConfiguration: nil,
+            openAICodexConfiguration: nil,
+            deepLAPIConfiguration: nil,
             lastBillingResult: nil,
             lastRefreshError: nil,
             lastConvertedAmount: nil,

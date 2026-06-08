@@ -23,6 +23,9 @@ struct BillingCard: Identifiable, Codable, Equatable {
     var gcpConfiguration: GCPBillingConfiguration?
     var azureConfiguration: AzureBillingConfiguration?
     var cloudflareConfiguration: CloudflareBillingConfiguration?
+    var laravelCloudConfiguration: LaravelCloudBillingConfiguration?
+    var openAICodexConfiguration: OpenAICodexBillingConfiguration?
+    var deepLAPIConfiguration: DeepLAPIBillingConfiguration?
 
     var lastBillingResult: BillingProviderResult?
     var lastRefreshError: String?
@@ -51,6 +54,46 @@ struct CloudflareBillingConfiguration: Codable, Equatable {
     var accountID: String
 }
 
+struct LaravelCloudBillingConfiguration: Codable, Equatable {
+    var organizationID: String?
+}
+
+struct OpenAICodexBillingConfiguration: Codable, Equatable {
+    var organizationID: String?
+    var projectID: String?
+    var apiKeyID: String?
+    var lineItemFilter: String?
+}
+
+struct DeepLAPIBillingConfiguration: Codable, Equatable {
+    var apiPlanType: DeepLAPIPlanType
+    var monthlyBaseAmount: Decimal?
+    var monthlyBaseCurrency: CurrencyCode
+    var includedCharacters: Int?
+    var overageUnitCharacters: Int?
+    var overageUnitAmount: Decimal?
+    var overageCurrency: CurrencyCode
+}
+
+enum DeepLAPIPlanType: String, Codable, CaseIterable, Identifiable {
+    case free
+    case pro
+    case custom
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .free:
+            "Free"
+        case .pro:
+            "Pro"
+        case .custom:
+            "Custom"
+        }
+    }
+}
+
 enum BillingService: String, Codable, CaseIterable, Identifiable {
     case aws
     case gcp
@@ -64,6 +107,7 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
     case claude
     case claudeCode
     case deepl
+    case deepLApi
     case adobeCreativeCloud
     case dropbox
     case youtube
@@ -93,6 +137,7 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
     case googleOne
     case microsoft365
     case onePassword
+    case pixiv
     case amazonShopping
     case yodobashi
     case yahooShopping
@@ -127,6 +172,8 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
             "Claude Code"
         case .deepl:
             "DeepL"
+        case .deepLApi:
+            "DeepL API"
         case .adobeCreativeCloud:
             "Adobe Creative Cloud"
         case .dropbox:
@@ -185,6 +232,8 @@ enum BillingService: String, Codable, CaseIterable, Identifiable {
             "Microsoft 365"
         case .onePassword:
             "1Password"
+        case .pixiv:
+            "pixiv"
         case .amazonShopping:
             "Amazon"
         case .yodobashi:
@@ -231,10 +280,13 @@ enum BillingServiceGroup: String, CaseIterable, Identifiable {
                 .gcp,
                 .azure,
                 .cloudflare,
+                .laravelCloud,
                 .openAiApi,
+                .openAiCodex,
                 .openAiChatGpt,
                 .githubCopilot,
                 .deepl,
+                .deepLApi,
                 .adobeCreativeCloud,
                 .dropbox
             ]
@@ -248,6 +300,7 @@ enum BillingServiceGroup: String, CaseIterable, Identifiable {
                 .appleArcade,
                 .iTunesMatch,
                 .hulu,
+                .abema,
                 .uNext,
                 .niconicoPremium,
                 .dAnimeStore,
@@ -268,7 +321,8 @@ enum BillingServiceGroup: String, CaseIterable, Identifiable {
                 .iCloudPlus,
                 .googleOne,
                 .microsoft365,
-                .onePassword
+                .onePassword,
+                .pixiv
             ]
         case .shopping:
             [

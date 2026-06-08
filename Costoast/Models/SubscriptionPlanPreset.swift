@@ -35,6 +35,12 @@ enum SubscriptionPlanPresetCatalog {
             preset(.openAiChatGpt, "Team", .usd, .monthly),
             preset(.openAiChatGpt, "Custom", .usd, .custom)
         ],
+        .openAiCodex: [
+            preset(.openAiCodex, "ChatGPT Plus", .usd, .monthly),
+            preset(.openAiCodex, "ChatGPT Pro", .usd, .monthly),
+            preset(.openAiCodex, "ChatGPT Business", .usd, .monthly),
+            preset(.openAiCodex, "Custom", .usd, .custom)
+        ],
         .githubCopilot: [
             preset(.githubCopilot, "Free", .usd, .monthly),
             preset(.githubCopilot, "Pro", .usd, .monthly),
@@ -235,6 +241,10 @@ enum SubscriptionPlanPresetCatalog {
             preset(.onePassword, "Teams", .usd, .monthly),
             preset(.onePassword, "Business", .usd, .monthly),
             preset(.onePassword, "Custom", .usd, .custom)
+        ],
+        .pixiv: [
+            preset(.pixiv, "pixiv Premium", .jpy, .monthly),
+            preset(.pixiv, "Custom", .jpy, .custom)
         ]
     ]
 
