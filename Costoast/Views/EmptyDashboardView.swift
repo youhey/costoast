@@ -8,23 +8,17 @@
 import SwiftUI
 
 struct EmptyDashboardView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("No billing cards yet.")
-                .font(.headline)
+    var onAdd: () -> Void
 
-            Text("Cards will be added in the next phase.")
-                .font(.body)
-                .foregroundStyle(.secondary)
+    var body: some View {
+        AddBillingCardView(subtitle: "Add your first billing card.") {
+            onAdd()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(24)
-        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
 #Preview {
-    EmptyDashboardView()
+    EmptyDashboardView {}
         .padding()
         .frame(width: 800)
 }
