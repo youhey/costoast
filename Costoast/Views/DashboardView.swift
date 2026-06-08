@@ -19,9 +19,11 @@ struct DashboardView: View {
     @State private var formPresentation: BillingCardFormPresentation?
     @State private var cardPendingDeletion: BillingCard?
     @State private var draggedCard: BillingCard?
+    @State private var preferences = DashboardPreferencesStore.load()
     @State private var refreshingCardIDs: Set<UUID> = []
     @State private var isRefreshingAll = false
     @State private var isRefreshAllHovered = false
+    @State private var isUseOrderHovered = false
     @State private var isAddHovered = false
 
     init() {
@@ -42,43 +44,21 @@ struct DashboardView: View {
                     .foregroundStyle(.red)
             }
 
+            TotalCostCardView(
+                summary: totalCostCalculator.summarize(cards: store.cards)
+            )
+
+            DottedSeparator()
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    TotalCostCardView(
-                        summary: totalCostCalculator.summarize(cards: store.cards)
-                    )
-
                     if store.cards.isEmpty {
                         EmptyDashboardView {
                             presentAddForm()
                         }
                     } else {
-                        ForEach(store.cards) { card in
-                            BillingCardRowView(
-                                card: card,
-                                isRefreshing: refreshingCardIDs.contains(card.id),
-                                onRefresh: {
-                                    refresh(card)
-                                },
-                                onEdit: {
-                                    presentEditForm(for: card)
-                                },
-                                onDelete: {
-                                    cardPendingDeletion = card
-                                }
-                            )
-                            .onDrag {
-                                draggedCard = card
-                                return NSItemProvider(object: card.id.uuidString as NSString)
-                            }
-                            .onDrop(
-                                of: [UTType.text],
-                                delegate: BillingCardDropDelegate(
-                                    targetCard: card,
-                                    draggedCard: $draggedCard,
-                                    store: store
-                                )
-                            )
+                        ForEach(sortedCards) { card in
+                            billingCardRow(for: card)
                         }
 
                         AddBillingCardView(subtitle: nil) {
@@ -89,7 +69,9 @@ struct DashboardView: View {
                 .padding(.bottom, 2)
             }
         }
-        .padding(32)
+        .padding(.horizontal, 32)
+        .padding(.top, 24)
+        .padding(.bottom, 32)
         .frame(minWidth: 640, idealWidth: 800, maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -101,6 +83,28 @@ struct DashboardView: View {
                 .accessibilityLabel("Refresh All")
                 .help("Refresh All")
                 .onHover { isRefreshAllHovered = $0 }
+
+                Picker("Sort", selection: sortModeBinding) {
+                    ForEach(CardSortMode.allCases) { sortMode in
+                        Text(sortMode.displayName)
+                            .tag(sortMode)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 136)
+                .help(sortModeHelpText)
+                .disabled(store.cards.isEmpty)
+
+                if preferences.sortMode != .custom {
+                    Button(action: useCurrentOrderAsCustom) {
+                        Label("Use This Order as Custom", systemImage: "arrow.down.doc")
+                    }
+                    .buttonStyle(DashboardActionButtonStyle(isHovered: isUseOrderHovered))
+                    .disabled(store.cards.isEmpty)
+                    .accessibilityLabel("Use This Order as Custom")
+                    .help("Save the current sorted order and switch to Custom Order.")
+                    .onHover { isUseOrderHovered = $0 }
+                }
 
                 Button(action: presentAddForm) {
                     Label("Add", systemImage: "plus")
@@ -148,12 +152,82 @@ struct DashboardView: View {
         }
     }
 
+    private var sortModeBinding: Binding<CardSortMode> {
+        Binding(
+            get: { preferences.sortMode },
+            set: { setSortMode($0) }
+        )
+    }
+
+    private var sortedCards: [BillingCard] {
+        sortedCards(from: store.cards, mode: preferences.sortMode)
+    }
+
+    private var sortModeHelpText: String {
+        if preferences.sortMode == .custom {
+            return "Custom Order. Drag cards to rearrange them."
+        }
+
+        return "Sorted by \(preferences.sortMode.displayName). Switch to Custom Order to rearrange cards."
+    }
+
+    @ViewBuilder
+    private func billingCardRow(for card: BillingCard) -> some View {
+        let row = BillingCardRowView(
+            card: card,
+            isRefreshing: refreshingCardIDs.contains(card.id),
+            onRefresh: {
+                refresh(card)
+            },
+            onEdit: {
+                presentEditForm(for: card)
+            },
+            onDelete: {
+                cardPendingDeletion = card
+            }
+        )
+
+        if preferences.sortMode == .custom {
+            row
+                .onDrag {
+                    draggedCard = card
+                    return NSItemProvider(object: card.id.uuidString as NSString)
+                }
+                .onDrop(
+                    of: [UTType.text],
+                    delegate: BillingCardDropDelegate(
+                        targetCard: card,
+                        draggedCard: $draggedCard,
+                        store: store
+                    )
+                )
+        } else {
+            row
+        }
+    }
+
     private func presentAddForm() {
         formPresentation = BillingCardFormPresentation(card: nil)
     }
 
     private func presentEditForm(for card: BillingCard) {
         formPresentation = BillingCardFormPresentation(card: card)
+    }
+
+    private func setSortMode(_ sortMode: CardSortMode) {
+        preferences.sortMode = sortMode
+        DashboardPreferencesStore.save(preferences)
+        if sortMode != .custom {
+            draggedCard = nil
+        }
+    }
+
+    private func useCurrentOrderAsCustom() {
+        let currentOrder = sortedCards
+        withAnimation {
+            store.saveCustomOrder(currentOrder)
+            setSortMode(.custom)
+        }
     }
 
     private func refresh(_ card: BillingCard) {
@@ -271,7 +345,108 @@ struct DashboardView: View {
     DashboardView()
 }
 
+private struct DottedSeparator: View {
+    var body: some View {
+        Rectangle()
+            .fill(.clear)
+            .frame(height: 1)
+            .overlay {
+                GeometryReader { geometry in
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: 0))
+                        path.addLine(to: CGPoint(x: geometry.size.width, y: 0))
+                    }
+                    .stroke(
+                        Color.pink.opacity(0.65),
+                        style: StrokeStyle(
+                            lineWidth: 1.5,
+                            lineCap: .round,
+                            dash: [1, 8]
+                        )
+                    )
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+    }
+}
+
 private struct BillingCardFormPresentation: Identifiable {
     let id = UUID()
     let card: BillingCard?
+}
+
+private extension DashboardView {
+    func sortedCards(from cards: [BillingCard], mode: CardSortMode) -> [BillingCard] {
+        switch mode {
+        case .custom:
+            cards.sorted(by: customOrder)
+        case .nameAsc:
+            cards.sorted(by: nameOrder)
+        case .serviceGroup:
+            cards.sorted(by: serviceGroupOrder)
+        case .amountDesc:
+            cards.sorted { lhs, rhs in
+                amountOrder(lhs, rhs, ascending: false)
+            }
+        case .amountAsc:
+            cards.sorted { lhs, rhs in
+                amountOrder(lhs, rhs, ascending: true)
+            }
+        }
+    }
+
+    func customOrder(_ lhs: BillingCard, _ rhs: BillingCard) -> Bool {
+        if lhs.displayOrder == rhs.displayOrder {
+            return lhs.createdAt < rhs.createdAt
+        }
+
+        return lhs.displayOrder < rhs.displayOrder
+    }
+
+    func nameOrder(_ lhs: BillingCard, _ rhs: BillingCard) -> Bool {
+        let comparison = lhs.name.localizedCaseInsensitiveCompare(rhs.name)
+        if comparison == .orderedSame {
+            return customOrder(lhs, rhs)
+        }
+
+        return comparison == .orderedAscending
+    }
+
+    func serviceGroupOrder(_ lhs: BillingCard, _ rhs: BillingCard) -> Bool {
+        let lhsGroup = lhs.service.serviceGroupSortIndex
+        let rhsGroup = rhs.service.serviceGroupSortIndex
+        if lhsGroup == rhsGroup {
+            return nameOrder(lhs, rhs)
+        }
+
+        return lhsGroup < rhsGroup
+    }
+
+    func amountOrder(_ lhs: BillingCard, _ rhs: BillingCard, ascending: Bool) -> Bool {
+        let lhsAmount = lhs.currentConvertedAmount?.jpyAmount
+        let rhsAmount = rhs.currentConvertedAmount?.jpyAmount
+
+        switch (lhsAmount, rhsAmount) {
+        case let (lhsAmount?, rhsAmount?):
+            if lhsAmount == rhsAmount {
+                return serviceGroupOrder(lhs, rhs)
+            }
+            return ascending ? lhsAmount < rhsAmount : lhsAmount > rhsAmount
+        case (_?, nil):
+            return true
+        case (nil, _?):
+            return false
+        case (nil, nil):
+            return serviceGroupOrder(lhs, rhs)
+        }
+    }
+}
+
+private extension BillingService {
+    var serviceGroupSortIndex: Int {
+        BillingServiceGroup.allCases.firstIndex { group in
+            group.services.contains(self)
+        } ?? BillingServiceGroup.allCases.count
+    }
 }

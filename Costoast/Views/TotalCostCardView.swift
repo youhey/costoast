@@ -43,7 +43,7 @@ struct TotalCostCardView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(.background, in: RoundedRectangle(cornerRadius: 8))
+        .background(summaryBackground, in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(.quaternary, lineWidth: 1)
@@ -60,6 +60,10 @@ struct TotalCostCardView: View {
             .padding(.vertical, 8)
             .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 8))
             .accessibilityHidden(true)
+    }
+
+    private var summaryBackground: Color {
+        Color(red: 0.18, green: 0.16, blue: 0.14)
     }
 
     private var groupTotalsView: some View {

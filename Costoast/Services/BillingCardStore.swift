@@ -149,6 +149,35 @@ final class BillingCardStore: ObservableObject {
         save()
     }
 
+    func saveCustomOrder(_ orderedCards: [BillingCard]) {
+        guard !orderedCards.isEmpty else {
+            return
+        }
+
+        let orderedIDs = orderedCards.map(\.id)
+        let knownIDs = Set(cards.map(\.id))
+        guard orderedIDs.allSatisfy({ knownIDs.contains($0) }) else {
+            return
+        }
+
+        var displayOrderByID: [UUID: Int] = [:]
+        for (index, id) in orderedIDs.enumerated() {
+            displayOrderByID[id] = index
+        }
+
+        let fallbackStart = orderedIDs.count
+        for card in cards where displayOrderByID[card.id] == nil {
+            displayOrderByID[card.id] = fallbackStart + card.displayOrder
+        }
+
+        cards = normalized(cards.map { card in
+            var updatedCard = card
+            updatedCard.displayOrder = displayOrderByID[card.id] ?? card.displayOrder
+            return updatedCard
+        })
+        save()
+    }
+
     private func save() {
         do {
             let data = try encoder.encode(cards)
