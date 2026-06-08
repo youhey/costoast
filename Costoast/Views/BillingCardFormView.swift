@@ -699,12 +699,13 @@ struct BillingCardFormView: View {
         }
 
         if Self.defaultsToSubscriptionPlan(selectedService) {
-            if let sourceType, Self.supportedSourceTypes(for: selectedService).contains(sourceType), sourceType != .apiUsage {
-                resetPlanFields()
-                return
-            } else {
-                sourceType = .subscriptionPlan
-            }
+            sourceType = .subscriptionPlan
+            resetPlanFields()
+            return
+        }
+
+        if Self.requiresManualAmount(selectedService) {
+            sourceType = .manualAmount
             resetPlanFields()
             return
         }
@@ -780,6 +781,10 @@ struct BillingCardFormView: View {
             return .subscriptionPlan
         }
 
+        if requiresManualAmount(card?.service) {
+            return .manualAmount
+        }
+
         return card?.sourceType
     }
 
@@ -818,7 +823,11 @@ struct BillingCardFormView: View {
         }
 
         if defaultsToSubscriptionPlan(selectedService) {
-            return [.subscriptionPlan, .manualAmount]
+            return [.subscriptionPlan]
+        }
+
+        if requiresManualAmount(selectedService) {
+            return [.manualAmount]
         }
 
         return BillingSourceType.allCases
@@ -831,6 +840,10 @@ struct BillingCardFormView: View {
         case .githubCopilot, .openAiChatGpt, .claude, .claudeCode, .deepl, .adobeCreativeCloud, .dropbox, .youtube, .netflix, .disneyPlus, .appleTvPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword, .pixiv, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual, nil:
             false
         }
+    }
+
+    private static func requiresManualAmount(_ selectedService: BillingService?) -> Bool {
+        selectedService == .manual
     }
 
     private static func defaultsToSubscriptionPlan(_ selectedService: BillingService?) -> Bool {
