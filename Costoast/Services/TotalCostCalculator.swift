@@ -19,22 +19,41 @@ struct TotalCostSummary: Equatable {
 
 final class TotalCostCalculator {
     func summarize(cards: [BillingCard]) -> TotalCostSummary {
-        let convertedAmounts = cards.compactMap(\.currentConvertedAmount)
-        let total = convertedAmounts.reduce(Decimal.zero) { partialResult, convertedAmount in
-            partialResult + convertedAmount.jpyAmount
+        let convertedCards = cards.compactMap { card -> (card: BillingCard, convertedAmount: ConvertedAmount)? in
+            guard let convertedAmount = card.currentConvertedAmount else {
+                return nil
+            }
+
+            return (card, convertedAmount)
         }
-        let latestRate = convertedAmounts.max { lhs, rhs in
+        let total = convertedCards.reduce(Decimal.zero) { partialResult, convertedCard in
+            partialResult + convertedCard.card.billingCycle.monthlyTotalMultiplier * convertedCard.convertedAmount.jpyAmount
+        }
+        let latestRate = convertedCards.map(\.convertedAmount).max { lhs, rhs in
             lhs.rateFetchedAt < rhs.rateFetchedAt
         }
 
         return TotalCostSummary(
             totalJPY: total,
             activeCardCount: cards.count,
-            includedCardCount: convertedAmounts.count,
-            excludedCardCount: cards.count - convertedAmounts.count,
+            includedCardCount: convertedCards.count,
+            excludedCardCount: cards.count - convertedCards.count,
             rateFetchedAt: latestRate?.rateFetchedAt,
             sourceName: latestRate?.sourceName,
             hasConversionErrors: cards.contains { $0.lastConversionError != nil }
         )
+    }
+}
+
+private extension BillingCycle {
+    var monthlyTotalMultiplier: Decimal {
+        switch self {
+        case .monthly:
+            1
+        case .yearly:
+            Decimal(1) / Decimal(12)
+        case .custom:
+            1
+        }
     }
 }

@@ -14,8 +14,10 @@ struct BillingCardFormView: View {
     private let onSave: (BillingCard) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var focusedField: Field?
 
     @State private var name: String
+    @State private var nameIsSuggested: Bool
     @State private var service: BillingService?
     @State private var sourceType: BillingSourceType?
     @State private var selectedPlanPresetID: String?
@@ -54,6 +56,7 @@ struct BillingCardFormView: View {
         self.onSave = onSave
 
         _name = State(initialValue: card?.name ?? "")
+        _nameIsSuggested = State(initialValue: false)
         _service = State(initialValue: card?.service)
         _sourceType = State(initialValue: Self.initialSourceType(for: card))
         _selectedPlanPresetID = State(initialValue: Self.initialPlanPresetID(for: card))
@@ -81,6 +84,14 @@ struct BillingCardFormView: View {
 
             Form {
                 TextField("Name", text: $name)
+                    .foregroundStyle(nameIsSuggested ? .secondary : .primary)
+                    .focused($focusedField, equals: .name)
+                    .onChange(of: focusedField) { _, focusedField in
+                        if focusedField == .name, nameIsSuggested {
+                            name = ""
+                            nameIsSuggested = false
+                        }
+                    }
 
                 Picker("Service", selection: $service) {
                     Text("none").tag(Optional<BillingService>.none)
@@ -247,7 +258,7 @@ struct BillingCardFormView: View {
     private var validationMessages: [String] {
         var messages: [String] = []
 
-        if trimmedName.isEmpty {
+        if effectiveName.isEmpty {
             messages.append("Name is required.")
         }
 
@@ -312,6 +323,14 @@ struct BillingCardFormView: View {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var effectiveName: String {
+        if !trimmedName.isEmpty && !nameIsSuggested {
+            return trimmedName
+        }
+
+        return service?.displayName ?? trimmedName
+    }
+
     private var trimmedPlanName: String {
         planName.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -365,7 +384,7 @@ struct BillingCardFormView: View {
             return nil
         }
 
-        return Decimal(string: trimmedAmountText)
+        return Decimal(string: normalizedAmountText)
     }
 
     private var parsedBillingStartDay: Int? {
@@ -405,7 +424,7 @@ struct BillingCardFormView: View {
 
         let billingCard = BillingCard(
             id: card?.id ?? UUID(),
-            name: trimmedName,
+            name: effectiveName,
             service: service,
             sourceType: sourceType,
             displayOrder: card?.displayOrder ?? displayOrder,
@@ -462,6 +481,7 @@ struct BillingCardFormView: View {
 
     private func updateSourceTypeForServiceChange(from previousService: BillingService?, to selectedService: BillingService?) {
         selectedPlanPresetID = nil
+        updateSuggestedName(for: selectedService)
 
         if Self.requiresAPIUsage(selectedService) {
             sourceType = .apiUsage
@@ -494,6 +514,25 @@ struct BillingCardFormView: View {
         currency = preset.currency
         amountText = preset.amount.map(BillingCardFormat.decimal) ?? ""
         billingCycle = preset.billingCycle
+    }
+
+    private func updateSuggestedName(for selectedService: BillingService?) {
+        guard focusedField != .name else {
+            return
+        }
+
+        guard let selectedService else {
+            if nameIsSuggested {
+                name = ""
+                nameIsSuggested = false
+            }
+            return
+        }
+
+        if trimmedName.isEmpty || nameIsSuggested {
+            name = selectedService.displayName
+            nameIsSuggested = true
+        }
     }
 
     private func resetPlanFields() {
@@ -548,6 +587,10 @@ struct BillingCardFormView: View {
         case .aws, .gcp, .azure, .cloudflare, .laravelCloud, .openAiCodex, .openAiApi, .claude, .claudeCode, .deepl, .yodobashi, .yahooShopping, .mercari, .manual, nil:
             false
         }
+    }
+
+    private var normalizedAmountText: String {
+        trimmedAmountText.replacingOccurrences(of: ",", with: "")
     }
 
     private func saveCredentials(for card: BillingCard) throws {
@@ -624,6 +667,12 @@ struct BillingCardFormView: View {
         } else {
             try credentialStore.deleteCredentials(for: card.id)
         }
+    }
+}
+
+private extension BillingCardFormView {
+    enum Field {
+        case name
     }
 }
 

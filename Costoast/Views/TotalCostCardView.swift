@@ -15,23 +15,23 @@ struct TotalCostCardView: View {
             symbolView
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("Total")
+                Text("Total for \(Self.monthNameFormatter.string(from: Date()))")
                     .font(.headline)
 
                 HStack(alignment: .firstTextBaseline, spacing: 14) {
-                    Text("\(BillingCardFormat.jpy(summary.totalJPY)) estimated")
+                    Text(BillingCardFormat.jpy(summary.totalJPY))
                         .font(.system(size: 20, weight: .semibold))
 
                     if summary.activeCardCount == 0 {
                         Text("No billing cards yet.")
                             .foregroundStyle(.secondary)
                     } else if summary.excludedCardCount == 0 {
-                        Text("Based on \(summary.activeCardCount) active \(cardLabel(summary.activeCardCount))")
+                        Text("(Based on \(summary.activeCardCount) \(cardLabel(summary.activeCardCount)))")
                             .foregroundStyle(.secondary)
                     } else {
-                        Text("Based on \(summary.includedCardCount) of \(summary.activeCardCount) active \(cardLabel(summary.activeCardCount))")
+                        Text("(Based on \(summary.includedCardCount) of \(summary.activeCardCount) \(cardLabel(summary.activeCardCount)))")
                             .foregroundStyle(.secondary)
-                        Text("\(summary.excludedCardCount) \(cardLabel(summary.excludedCardCount)) excluded from total")
+                        Text("(\(summary.excludedCardCount) \(cardLabel(summary.excludedCardCount)) excluded from total)")
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -63,6 +63,13 @@ struct TotalCostCardView: View {
     private func cardLabel(_ count: Int) -> String {
         count == 1 ? "card" : "cards"
     }
+
+    private static let monthNameFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "MMMM"
+        return formatter
+    }()
 }
 
 #Preview {
