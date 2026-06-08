@@ -114,7 +114,11 @@ private struct DeepLAPIProductUsage: Decodable {
 
 private extension DeepLAPIBillingConfiguration {
     func estimatedCost(usedCharacters: Int) -> Money? {
-        guard apiPlanType != .free, let monthlyBaseAmount else {
+        if apiPlanType == .free {
+            return Money(value: .zero, currency: .jpy)
+        }
+
+        guard let monthlyBaseAmount else {
             return nil
         }
 
