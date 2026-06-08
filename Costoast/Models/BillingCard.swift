@@ -20,6 +20,10 @@ struct BillingCard: Identifiable, Codable, Equatable {
     var billingCycle: BillingCycle
     var billingStartDay: Int?
 
+    var gcpConfiguration: GCPBillingConfiguration?
+    var azureConfiguration: AzureBillingConfiguration?
+    var cloudflareConfiguration: CloudflareBillingConfiguration?
+
     var lastBillingResult: BillingProviderResult?
     var lastRefreshError: String?
     var lastConvertedAmount: ConvertedAmount?
@@ -27,6 +31,24 @@ struct BillingCard: Identifiable, Codable, Equatable {
 
     var createdAt: Date
     var updatedAt: Date
+}
+
+struct GCPBillingConfiguration: Codable, Equatable {
+    var projectID: String
+    var datasetID: String
+    var tableName: String
+    var billingAccountID: String?
+}
+
+struct AzureBillingConfiguration: Codable, Equatable {
+    var tenantID: String
+    var clientID: String
+    var subscriptionID: String?
+    var scope: String?
+}
+
+struct CloudflareBillingConfiguration: Codable, Equatable {
+    var accountID: String
 }
 
 enum BillingService: String, Codable, CaseIterable, Identifiable {

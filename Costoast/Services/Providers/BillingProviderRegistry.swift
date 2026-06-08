@@ -12,6 +12,9 @@ final class BillingProviderRegistry {
     private let subscriptionPlanProvider = SubscriptionPlanProvider()
     private let openAIProvider = OpenAIAPIUsageProvider()
     private let awsProvider = AWSBillingProvider()
+    private let gcpProvider = GCPBillingProvider()
+    private let azureProvider = AzureBillingProvider()
+    private let cloudflareProvider = CloudflareBillingProvider()
     private let unsupportedProvider = UnsupportedBillingProvider()
 
     func provider(for card: BillingCard) -> BillingProvider {
@@ -26,6 +29,12 @@ final class BillingProviderRegistry {
                 openAIProvider
             case .aws:
                 awsProvider
+            case .gcp:
+                gcpProvider
+            case .azure:
+                azureProvider
+            case .cloudflare:
+                cloudflareProvider
             default:
                 unsupportedProvider
             }

@@ -15,8 +15,23 @@ struct BillingCredentials: Codable, Equatable {
     var awsSecretAccessKey: String?
     var awsRegion: String?
 
+    var gcpServiceAccountJSON: String?
+
+    var azureClientSecret: String?
+
+    var cloudflareApiToken: String?
+
     var isEmpty: Bool {
-        [apiKey, organizationID, awsAccessKeyID, awsSecretAccessKey, awsRegion]
+        [
+            apiKey,
+            organizationID,
+            awsAccessKeyID,
+            awsSecretAccessKey,
+            awsRegion,
+            gcpServiceAccountJSON,
+            azureClientSecret,
+            cloudflareApiToken
+        ]
             .allSatisfy { ($0 ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 }

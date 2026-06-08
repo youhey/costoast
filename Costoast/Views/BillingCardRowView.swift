@@ -105,7 +105,10 @@ struct BillingCardRowView: View {
         } else if let error = card.lastRefreshError {
             Text(error)
                 .foregroundStyle(.red)
-        } else if card.sourceType == .apiUsage {
+        } else if let message = card.lastBillingResult?.message {
+            Text(message)
+                .foregroundStyle(.secondary)
+        } else if card.sourceType == .apiUsage && card.lastBillingResult == nil {
             Text("Not configured")
                 .foregroundStyle(.secondary)
         } else if card.currentOriginalAmount == nil {
@@ -194,6 +197,9 @@ private extension BillingService {
             amount: nil,
             billingCycle: .monthly,
             billingStartDay: nil,
+            gcpConfiguration: nil,
+            azureConfiguration: nil,
+            cloudflareConfiguration: nil,
             lastBillingResult: nil,
             lastRefreshError: nil,
             lastConvertedAmount: nil,

@@ -27,6 +27,18 @@ struct BillingCardFormView: View {
     @State private var organizationID: String = ""
     @State private var awsAccessKeyID: String = ""
     @State private var awsSecretAccessKey: String = ""
+    @State private var gcpProjectID: String
+    @State private var gcpDatasetID: String
+    @State private var gcpTableName: String
+    @State private var gcpBillingAccountID: String
+    @State private var gcpServiceAccountJSON: String = ""
+    @State private var azureTenantID: String
+    @State private var azureClientID: String
+    @State private var azureSubscriptionID: String
+    @State private var azureScope: String
+    @State private var azureClientSecret: String = ""
+    @State private var cloudflareAccountID: String
+    @State private var cloudflareApiToken: String = ""
     @State private var credentialError: String?
     @State private var automaticallySelectedSourceType = false
 
@@ -49,6 +61,15 @@ struct BillingCardFormView: View {
         _amountText = State(initialValue: card?.amount.map(BillingCardFormat.decimal) ?? "")
         _billingCycle = State(initialValue: card?.billingCycle ?? .monthly)
         _billingStartDayText = State(initialValue: card?.billingStartDay.map(String.init) ?? "")
+        _gcpProjectID = State(initialValue: card?.gcpConfiguration?.projectID ?? "")
+        _gcpDatasetID = State(initialValue: card?.gcpConfiguration?.datasetID ?? "")
+        _gcpTableName = State(initialValue: card?.gcpConfiguration?.tableName ?? "")
+        _gcpBillingAccountID = State(initialValue: card?.gcpConfiguration?.billingAccountID ?? "")
+        _azureTenantID = State(initialValue: card?.azureConfiguration?.tenantID ?? "")
+        _azureClientID = State(initialValue: card?.azureConfiguration?.clientID ?? "")
+        _azureSubscriptionID = State(initialValue: card?.azureConfiguration?.subscriptionID ?? "")
+        _azureScope = State(initialValue: card?.azureConfiguration?.scope ?? "")
+        _cloudflareAccountID = State(initialValue: card?.cloudflareConfiguration?.accountID ?? "")
     }
 
     var body: some View {
@@ -101,6 +122,7 @@ struct BillingCardFormView: View {
 
                 TextField("Billing Start Day", text: $billingStartDayText)
 
+                providerConfigurationFields
                 credentialFields
             }
 
@@ -135,6 +157,29 @@ struct BillingCardFormView: View {
     }
 
     @ViewBuilder
+    private var providerConfigurationFields: some View {
+        if sourceType == .apiUsage && service == .gcp {
+            Section("GCP Billing Export") {
+                TextField("Project ID", text: $gcpProjectID)
+                TextField("Dataset ID", text: $gcpDatasetID)
+                TextField("Table Name", text: $gcpTableName)
+                TextField("Billing Account ID", text: $gcpBillingAccountID)
+            }
+        } else if sourceType == .apiUsage && service == .azure {
+            Section("Azure Cost Management") {
+                TextField("Tenant ID", text: $azureTenantID)
+                TextField("Client ID", text: $azureClientID)
+                TextField("Subscription ID", text: $azureSubscriptionID)
+                TextField("Scope", text: $azureScope)
+            }
+        } else if sourceType == .apiUsage && service == .cloudflare {
+            Section("Cloudflare Billing") {
+                TextField("Account ID", text: $cloudflareAccountID)
+            }
+        }
+    }
+
+    @ViewBuilder
     private var credentialFields: some View {
         if sourceType == .apiUsage && service == .openAiApi {
             Section("OpenAI API Credentials") {
@@ -149,6 +194,29 @@ struct BillingCardFormView: View {
                 TextField("Access Key ID", text: $awsAccessKeyID)
                 SecureField("Secret Access Key", text: $awsSecretAccessKey)
                 Text("Used to fetch AWS cost data from Cost Explorer.\nStored securely in macOS Keychain.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        } else if sourceType == .apiUsage && service == .gcp {
+            Section("GCP Credentials") {
+                TextEditor(text: $gcpServiceAccountJSON)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(minHeight: 120)
+                Text("Paste a service account JSON key. Stored securely in macOS Keychain.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        } else if sourceType == .apiUsage && service == .azure {
+            Section("Azure Credentials") {
+                SecureField("Client Secret", text: $azureClientSecret)
+                Text("Stored securely in macOS Keychain.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        } else if sourceType == .apiUsage && service == .cloudflare {
+            Section("Cloudflare Credentials") {
+                SecureField("API Token", text: $cloudflareApiToken)
+                Text("Stored securely in macOS Keychain.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -168,6 +236,32 @@ struct BillingCardFormView: View {
 
         if sourceType == nil {
             messages.append("Source Type is required.")
+        }
+
+        if sourceType == .apiUsage {
+            if service == .gcp {
+                if trimmedGCPProjectID.isEmpty {
+                    messages.append("GCP Project ID is required.")
+                }
+                if trimmedGCPDatasetID.isEmpty {
+                    messages.append("GCP Dataset ID is required.")
+                }
+                if trimmedGCPTableName.isEmpty {
+                    messages.append("GCP Table Name is required.")
+                }
+            } else if service == .azure {
+                if trimmedAzureTenantID.isEmpty {
+                    messages.append("Azure Tenant ID is required.")
+                }
+                if trimmedAzureClientID.isEmpty {
+                    messages.append("Azure Client ID is required.")
+                }
+                if trimmedAzureSubscriptionID.isEmpty && trimmedAzureScope.isEmpty {
+                    messages.append("Azure Subscription ID or Scope is required.")
+                }
+            } else if service == .cloudflare && trimmedCloudflareAccountID.isEmpty {
+                messages.append("Cloudflare Account ID is required.")
+            }
         }
 
         if !trimmedAmountText.isEmpty {
@@ -209,6 +303,42 @@ struct BillingCardFormView: View {
         billingStartDayText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var trimmedGCPProjectID: String {
+        gcpProjectID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedGCPDatasetID: String {
+        gcpDatasetID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedGCPTableName: String {
+        gcpTableName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedGCPBillingAccountID: String {
+        gcpBillingAccountID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedAzureTenantID: String {
+        azureTenantID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedAzureClientID: String {
+        azureClientID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedAzureSubscriptionID: String {
+        azureSubscriptionID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedAzureScope: String {
+        azureScope.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedCloudflareAccountID: String {
+        cloudflareAccountID.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private var parsedAmount: Decimal? {
         guard !trimmedAmountText.isEmpty else {
             return nil
@@ -236,6 +366,21 @@ struct BillingCardFormView: View {
         let now = Date()
         let savesPlanDetails = sourceType == .subscriptionPlan
         let savesAmountDetails = sourceType == .subscriptionPlan || sourceType == .manualAmount
+        let gcpConfiguration = service == .gcp && sourceType == .apiUsage ? GCPBillingConfiguration(
+            projectID: trimmedGCPProjectID,
+            datasetID: trimmedGCPDatasetID,
+            tableName: trimmedGCPTableName,
+            billingAccountID: trimmedGCPBillingAccountID.nilIfEmpty
+        ) : nil
+        let azureConfiguration = service == .azure && sourceType == .apiUsage ? AzureBillingConfiguration(
+            tenantID: trimmedAzureTenantID,
+            clientID: trimmedAzureClientID,
+            subscriptionID: trimmedAzureSubscriptionID.nilIfEmpty,
+            scope: trimmedAzureScope.nilIfEmpty
+        ) : nil
+        let cloudflareConfiguration = service == .cloudflare && sourceType == .apiUsage ? CloudflareBillingConfiguration(
+            accountID: trimmedCloudflareAccountID
+        ) : nil
 
         let billingCard = BillingCard(
             id: card?.id ?? UUID(),
@@ -248,6 +393,9 @@ struct BillingCardFormView: View {
             amount: savesAmountDetails ? parsedAmount : nil,
             billingCycle: savesAmountDetails ? billingCycle : .monthly,
             billingStartDay: parsedBillingStartDay,
+            gcpConfiguration: gcpConfiguration,
+            azureConfiguration: azureConfiguration,
+            cloudflareConfiguration: cloudflareConfiguration,
             lastBillingResult: card?.lastBillingResult,
             lastRefreshError: card?.lastRefreshError,
             lastConvertedAmount: card?.lastConvertedAmount,
@@ -282,6 +430,9 @@ struct BillingCardFormView: View {
             organizationID = credentials.organizationID ?? ""
             awsAccessKeyID = credentials.awsAccessKeyID ?? ""
             awsSecretAccessKey = credentials.awsSecretAccessKey ?? ""
+            gcpServiceAccountJSON = credentials.gcpServiceAccountJSON ?? ""
+            azureClientSecret = credentials.azureClientSecret ?? ""
+            cloudflareApiToken = credentials.cloudflareApiToken ?? ""
             credentialError = nil
         } catch {
             credentialError = error.localizedDescription
@@ -321,6 +472,18 @@ struct BillingCardFormView: View {
         trimmedPlanName.isEmpty &&
             trimmedAmountText.isEmpty &&
             trimmedBillingStartDayText.isEmpty &&
+            trimmedGCPProjectID.isEmpty &&
+            trimmedGCPDatasetID.isEmpty &&
+            trimmedGCPTableName.isEmpty &&
+            trimmedGCPBillingAccountID.isEmpty &&
+            gcpServiceAccountJSON.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            trimmedAzureTenantID.isEmpty &&
+            trimmedAzureClientID.isEmpty &&
+            trimmedAzureSubscriptionID.isEmpty &&
+            trimmedAzureScope.isEmpty &&
+            azureClientSecret.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            trimmedCloudflareAccountID.isEmpty &&
+            cloudflareApiToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
             apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
             organizationID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
             awsAccessKeyID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -335,7 +498,10 @@ struct BillingCardFormView: View {
                     organizationID: organizationID.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
                     awsAccessKeyID: nil,
                     awsSecretAccessKey: nil,
-                    awsRegion: nil
+                    awsRegion: nil,
+                    gcpServiceAccountJSON: nil,
+                    azureClientSecret: nil,
+                    cloudflareApiToken: nil
                 ),
                 for: card.id
             )
@@ -346,7 +512,52 @@ struct BillingCardFormView: View {
                     organizationID: nil,
                     awsAccessKeyID: awsAccessKeyID.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
                     awsSecretAccessKey: awsSecretAccessKey.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
-                    awsRegion: "us-east-1"
+                    awsRegion: "us-east-1",
+                    gcpServiceAccountJSON: nil,
+                    azureClientSecret: nil,
+                    cloudflareApiToken: nil
+                ),
+                for: card.id
+            )
+        } else if sourceType == .apiUsage && service == .gcp {
+            try credentialStore.saveCredentials(
+                BillingCredentials(
+                    apiKey: nil,
+                    organizationID: nil,
+                    awsAccessKeyID: nil,
+                    awsSecretAccessKey: nil,
+                    awsRegion: nil,
+                    gcpServiceAccountJSON: gcpServiceAccountJSON.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    azureClientSecret: nil,
+                    cloudflareApiToken: nil
+                ),
+                for: card.id
+            )
+        } else if sourceType == .apiUsage && service == .azure {
+            try credentialStore.saveCredentials(
+                BillingCredentials(
+                    apiKey: nil,
+                    organizationID: nil,
+                    awsAccessKeyID: nil,
+                    awsSecretAccessKey: nil,
+                    awsRegion: nil,
+                    gcpServiceAccountJSON: nil,
+                    azureClientSecret: azureClientSecret.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    cloudflareApiToken: nil
+                ),
+                for: card.id
+            )
+        } else if sourceType == .apiUsage && service == .cloudflare {
+            try credentialStore.saveCredentials(
+                BillingCredentials(
+                    apiKey: nil,
+                    organizationID: nil,
+                    awsAccessKeyID: nil,
+                    awsSecretAccessKey: nil,
+                    awsRegion: nil,
+                    gcpServiceAccountJSON: nil,
+                    azureClientSecret: nil,
+                    cloudflareApiToken: cloudflareApiToken.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
                 ),
                 for: card.id
             )
