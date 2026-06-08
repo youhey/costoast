@@ -16,8 +16,8 @@ struct BillingCardFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var name: String
-    @State private var service: BillingService
-    @State private var sourceType: BillingSourceType
+    @State private var service: BillingService?
+    @State private var sourceType: BillingSourceType?
     @State private var planName: String
     @State private var currency: CurrencyCode
     @State private var amountText: String
@@ -28,6 +28,7 @@ struct BillingCardFormView: View {
     @State private var awsAccessKeyID: String = ""
     @State private var awsSecretAccessKey: String = ""
     @State private var credentialError: String?
+    @State private var automaticallySelectedSourceType = false
 
     init(
         card: BillingCard?,
@@ -41,8 +42,8 @@ struct BillingCardFormView: View {
         self.onSave = onSave
 
         _name = State(initialValue: card?.name ?? "")
-        _service = State(initialValue: card?.service ?? .manual)
-        _sourceType = State(initialValue: card?.sourceType ?? .manualAmount)
+        _service = State(initialValue: card?.service)
+        _sourceType = State(initialValue: card?.sourceType)
         _planName = State(initialValue: card?.planName ?? "")
         _currency = State(initialValue: card?.currency ?? .jpy)
         _amountText = State(initialValue: card?.amount.map(BillingCardFormat.decimal) ?? "")
@@ -60,14 +61,21 @@ struct BillingCardFormView: View {
                 TextField("Name", text: $name)
 
                 Picker("Service", selection: $service) {
+                    Text("none").tag(Optional<BillingService>.none)
+                    Divider()
                     ForEach(BillingService.allCases) { service in
-                        Text(service.displayName).tag(service)
+                        Text(service.displayName).tag(Optional(service))
                     }
+                }
+                .onChange(of: service) { _, selectedService in
+                    updateSourceTypeForServiceChange(selectedService)
                 }
 
                 Picker("Source Type", selection: $sourceType) {
+                    Text("none").tag(Optional<BillingSourceType>.none)
+                    Divider()
                     ForEach(BillingSourceType.allCases) { sourceType in
-                        Text(sourceType.displayName).tag(sourceType)
+                        Text(sourceType.displayName).tag(Optional(sourceType))
                     }
                 }
 
@@ -154,6 +162,14 @@ struct BillingCardFormView: View {
             messages.append("Name is required.")
         }
 
+        if service == nil {
+            messages.append("Service is required.")
+        }
+
+        if sourceType == nil {
+            messages.append("Source Type is required.")
+        }
+
         if !trimmedAmountText.isEmpty {
             if let amount = parsedAmount {
                 if NSDecimalNumber(decimal: amount).compare(NSDecimalNumber.zero) == .orderedAscending {
@@ -213,6 +229,9 @@ struct BillingCardFormView: View {
         guard validationMessages.isEmpty else {
             return
         }
+        guard let service, let sourceType else {
+            return
+        }
 
         let now = Date()
         let savesPlanDetails = sourceType == .subscriptionPlan
@@ -267,6 +286,45 @@ struct BillingCardFormView: View {
         } catch {
             credentialError = error.localizedDescription
         }
+    }
+
+    private func updateSourceTypeForServiceChange(_ selectedService: BillingService?) {
+        guard card == nil else {
+            return
+        }
+
+        if automaticallySelectedSourceType && sourceType != .apiUsage {
+            automaticallySelectedSourceType = false
+        }
+
+        if automaticallySelectedSourceType && !usesDefaultAPIUsage(selectedService) {
+            sourceType = nil
+            automaticallySelectedSourceType = false
+            return
+        }
+
+        guard sourceType == nil,
+              isOnlyNameEntered,
+              usesDefaultAPIUsage(selectedService) else {
+            return
+        }
+
+        sourceType = .apiUsage
+        automaticallySelectedSourceType = true
+    }
+
+    private func usesDefaultAPIUsage(_ selectedService: BillingService?) -> Bool {
+        selectedService == .aws || selectedService == .openAiApi
+    }
+
+    private var isOnlyNameEntered: Bool {
+        trimmedPlanName.isEmpty &&
+            trimmedAmountText.isEmpty &&
+            trimmedBillingStartDayText.isEmpty &&
+            apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            organizationID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            awsAccessKeyID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            awsSecretAccessKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func saveCredentials(for card: BillingCard) throws {
