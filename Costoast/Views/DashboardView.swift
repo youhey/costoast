@@ -35,40 +35,7 @@ struct DashboardView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 28) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Costoast")
-                        .font(.system(size: 34, weight: .semibold, design: .rounded))
-
-                    Text("Your costs, served fresh.")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                HStack(spacing: 8) {
-                    Button(action: refreshAll) {
-                        Label(isRefreshingAll ? "Refreshing" : "Refresh All", systemImage: "arrow.clockwise")
-                    }
-                    .buttonStyle(DashboardActionButtonStyle(isHovered: isRefreshAllHovered))
-                    .disabled(isRefreshingAll || store.cards.isEmpty)
-                    .accessibilityLabel("Refresh All")
-                    .help("Refresh All")
-                    .onHover { isRefreshAllHovered = $0 }
-
-                    Button(action: presentAddForm) {
-                        Label("Add", systemImage: "plus")
-                    }
-                    .buttonStyle(DashboardActionButtonStyle(isHovered: isAddHovered))
-                    .accessibilityLabel("Add Card")
-                    .help("Add Card")
-                    .onHover { isAddHovered = $0 }
-                }
-                .padding(.top, 4)
-            }
-
+        VStack(alignment: .leading, spacing: 16) {
             if let storageError = store.storageError {
                 Text(storageError)
                     .font(.callout)
@@ -124,6 +91,26 @@ struct DashboardView: View {
         }
         .padding(32)
         .frame(minWidth: 640, idealWidth: 800, maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button(action: refreshAll) {
+                    Label(isRefreshingAll ? "Refreshing" : "Refresh All", systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(DashboardActionButtonStyle(isHovered: isRefreshAllHovered))
+                .disabled(isRefreshingAll || store.cards.isEmpty)
+                .accessibilityLabel("Refresh All")
+                .help("Refresh All")
+                .onHover { isRefreshAllHovered = $0 }
+
+                Button(action: presentAddForm) {
+                    Label("Add", systemImage: "plus")
+                }
+                .buttonStyle(DashboardActionButtonStyle(isHovered: isAddHovered))
+                .accessibilityLabel("Add Card")
+                .help("Add Card")
+                .onHover { isAddHovered = $0 }
+            }
+        }
         .task {
             await refreshConversions(for: store.cards)
         }

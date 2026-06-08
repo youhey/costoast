@@ -11,44 +11,53 @@ struct TotalCostCardView: View {
     let summary: TotalCostSummary
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Total")
-                .font(.headline)
+        HStack(alignment: .center, spacing: 18) {
+            symbolView
 
-            Text("\(BillingCardFormat.jpy(summary.totalJPY)) estimated")
-                .font(.title2)
-                .fontWeight(.semibold)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Total")
+                    .font(.headline)
 
-            VStack(alignment: .leading, spacing: 6) {
-                if summary.activeCardCount == 0 {
-                    Text("No billing cards yet.")
-                } else if summary.excludedCardCount == 0 {
-                    Text("Based on \(summary.activeCardCount) active \(cardLabel(summary.activeCardCount))")
-                } else {
-                    Text("Based on \(summary.includedCardCount) of \(summary.activeCardCount) active \(cardLabel(summary.activeCardCount))")
-                    Text("\(summary.excludedCardCount) \(cardLabel(summary.excludedCardCount)) excluded from total")
-                        .foregroundStyle(.secondary)
-                }
+                HStack(alignment: .firstTextBaseline, spacing: 14) {
+                    Text("\(BillingCardFormat.jpy(summary.totalJPY)) estimated")
+                        .font(.system(size: 20, weight: .semibold))
 
-                if let rateFetchedAt = summary.rateFetchedAt {
-                    Text("FX updated: \(BillingCardFormat.jstDateTime(rateFetchedAt))")
-                        .foregroundStyle(.secondary)
-                } else if summary.hasConversionErrors {
-                    Text("FX rate unavailable")
-                        .foregroundStyle(.secondary)
-                    Text("Showing original amounts only.")
-                        .foregroundStyle(.secondary)
+                    if summary.activeCardCount == 0 {
+                        Text("No billing cards yet.")
+                            .foregroundStyle(.secondary)
+                    } else if summary.excludedCardCount == 0 {
+                        Text("Based on \(summary.activeCardCount) active \(cardLabel(summary.activeCardCount))")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Based on \(summary.includedCardCount) of \(summary.activeCardCount) active \(cardLabel(summary.activeCardCount))")
+                            .foregroundStyle(.secondary)
+                        Text("\(summary.excludedCardCount) \(cardLabel(summary.excludedCardCount)) excluded from total")
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .font(.body)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(24)
+        .padding(18)
         .background(.background, in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(.quaternary, lineWidth: 1)
         }
+    }
+
+    private var symbolView: some View {
+        Image(systemName: "sum")
+            .font(.system(size: 30, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .frame(width: 46, height: 46)
+            .frame(width: 78)
+            .frame(maxHeight: .infinity)
+            .padding(.vertical, 8)
+            .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityHidden(true)
     }
 
     private func cardLabel(_ count: Int) -> String {
