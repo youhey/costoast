@@ -87,7 +87,7 @@ struct DashboardActionButtonStyle: ButtonStyle {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(.quaternary.opacity(isHovered ? 1 : 0), lineWidth: 1)
+                    .stroke(.quaternary.opacity(isHovered ? 1 : 0.65), lineWidth: 1)
             }
             .opacity(isEnabled ? 1 : 0.45)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)

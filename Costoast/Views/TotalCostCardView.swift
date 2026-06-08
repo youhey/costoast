@@ -28,11 +28,11 @@ struct TotalCostCardView: View {
                     } else if summary.excludedCardCount == 0 {
                         Text("(Based on \(summary.activeCardCount) \(cardLabel(summary.activeCardCount)))")
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     } else {
                         Text("(Based on \(summary.includedCardCount) of \(summary.activeCardCount) \(cardLabel(summary.activeCardCount)))")
                             .foregroundStyle(.secondary)
-                        Text("(\(summary.excludedCardCount) \(cardLabel(summary.excludedCardCount)) excluded from total)")
-                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
             }
@@ -56,7 +56,6 @@ struct TotalCostCardView: View {
             .foregroundStyle(.secondary)
             .frame(width: 46, height: 46)
             .frame(width: 78)
-            .frame(maxHeight: .infinity)
             .padding(.vertical, 8)
             .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 8))
             .accessibilityHidden(true)

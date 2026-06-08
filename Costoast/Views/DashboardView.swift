@@ -23,7 +23,7 @@ struct DashboardView: View {
     @State private var refreshingCardIDs: Set<UUID> = []
     @State private var isRefreshingAll = false
     @State private var isRefreshAllHovered = false
-    @State private var isUseOrderHovered = false
+    @State private var isSaveOrderHovered = false
     @State private var isAddHovered = false
 
     init() {
@@ -74,45 +74,48 @@ struct DashboardView: View {
         .padding(.bottom, 32)
         .frame(minWidth: 640, idealWidth: 800, maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
         .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button(action: refreshAll) {
-                    Label(isRefreshingAll ? "Refreshing" : "Refresh All", systemImage: "arrow.clockwise")
-                }
-                .buttonStyle(DashboardActionButtonStyle(isHovered: isRefreshAllHovered))
-                .disabled(isRefreshingAll || store.cards.isEmpty)
-                .accessibilityLabel("Refresh All")
-                .help("Refresh All")
-                .onHover { isRefreshAllHovered = $0 }
-
-                Picker("Sort", selection: sortModeBinding) {
-                    ForEach(CardSortMode.allCases) { sortMode in
-                        Text(sortMode.displayName)
-                            .tag(sortMode)
+            ToolbarItem(placement: .primaryAction) {
+                HStack(spacing: 8) {
+                    Picker("Sort", selection: sortModeBinding) {
+                        ForEach(CardSortMode.allCases) { sortMode in
+                            Text(sortMode.displayName)
+                                .tag(sortMode)
+                        }
                     }
-                }
-                .pickerStyle(.menu)
-                .frame(width: 136)
-                .help(sortModeHelpText)
-                .disabled(store.cards.isEmpty)
-
-                if preferences.sortMode != .custom {
-                    Button(action: useCurrentOrderAsCustom) {
-                        Label("Use This Order as Custom", systemImage: "arrow.down.doc")
-                    }
-                    .buttonStyle(DashboardActionButtonStyle(isHovered: isUseOrderHovered))
+                    .pickerStyle(.menu)
+                    .frame(width: 136)
+                    .help(sortModeHelpText)
                     .disabled(store.cards.isEmpty)
-                    .accessibilityLabel("Use This Order as Custom")
-                    .help("Save the current sorted order and switch to Custom Order.")
-                    .onHover { isUseOrderHovered = $0 }
-                }
 
-                Button(action: presentAddForm) {
-                    Label("Add", systemImage: "plus")
+                    if preferences.sortMode != .custom {
+                        Button(action: saveAsCustomOrder) {
+                            Label("Save as Custom Order", systemImage: "arrow.down.doc")
+                        }
+                        .buttonStyle(DashboardActionButtonStyle(isHovered: isSaveOrderHovered))
+                        .disabled(store.cards.isEmpty)
+                        .accessibilityLabel("Save as Custom Order")
+                        .help("Save the current sorted order and switch to Custom Order.")
+                        .onHover { isSaveOrderHovered = $0 }
+                    }
+
+                    Button(action: refreshAll) {
+                        Label(isRefreshingAll ? "Refreshing" : "Refresh All", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(DashboardActionButtonStyle(isHovered: isRefreshAllHovered))
+                    .disabled(isRefreshingAll || store.cards.isEmpty)
+                    .accessibilityLabel("Refresh All")
+                    .help("Refresh All")
+                    .onHover { isRefreshAllHovered = $0 }
+
+                    Button(action: presentAddForm) {
+                        Label("Add", systemImage: "plus")
+                    }
+                    .buttonStyle(DashboardActionButtonStyle(isHovered: isAddHovered))
+                    .accessibilityLabel("Add Card")
+                    .help("Add Card")
+                    .onHover { isAddHovered = $0 }
                 }
-                .buttonStyle(DashboardActionButtonStyle(isHovered: isAddHovered))
-                .accessibilityLabel("Add Card")
-                .help("Add Card")
-                .onHover { isAddHovered = $0 }
+                .fixedSize()
             }
         }
         .task {
@@ -222,7 +225,7 @@ struct DashboardView: View {
         }
     }
 
-    private func useCurrentOrderAsCustom() {
+    private func saveAsCustomOrder() {
         let currentOrder = sortedCards
         withAnimation {
             store.saveCustomOrder(currentOrder)
