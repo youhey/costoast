@@ -149,7 +149,6 @@ struct DashboardView: View {
             viewModePicker
             refreshAllButton
             autoRefreshPicker
-            addCardButton
         }
         .fixedSize()
     }
@@ -158,14 +157,16 @@ struct DashboardView: View {
     private var sortControls: some View {
         if preferences.viewMode == .cards && !store.cards.isEmpty {
             HStack(spacing: 8) {
+                addCardButton
+
+                Spacer(minLength: 0)
+
                 Text("Sort")
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
                 sortPicker
                 saveCustomOrderButton
-
-                Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -252,11 +253,11 @@ struct DashboardView: View {
 
     private var addCardButton: some View {
         Button(action: presentAddForm) {
-            Label("Add", systemImage: "plus")
+            Label("Add item card", systemImage: "plus")
         }
         .labelStyle(.titleAndIcon)
         .buttonStyle(.borderless)
-        .frame(width: 70)
+        .frame(width: 124)
         .accessibilityLabel("Add Card")
         .help("Add Card")
     }
