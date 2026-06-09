@@ -79,8 +79,11 @@ struct DashboardView: View {
         .padding(.bottom, 32)
         .frame(minWidth: 640, idealWidth: 800, maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                viewModePicker
+            }
             ToolbarItem(placement: .primaryAction) {
-                toolbarActions
+                refreshControls
             }
         }
         .task {
@@ -144,9 +147,8 @@ struct DashboardView: View {
         )
     }
 
-    private var toolbarActions: some View {
+    private var refreshControls: some View {
         HStack(spacing: 8) {
-            viewModePicker
             refreshAllButton
             autoRefreshPicker
         }
