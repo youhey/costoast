@@ -21,6 +21,7 @@ struct DashboardView: View {
     @State private var preferences: DashboardPreferences
     @State private var refreshingCardIDs: Set<UUID> = []
     @State private var isRefreshingAll = false
+    @State private var lastRefreshAllAt: Date?
 
     init(userDefaults: UserDefaults = CostoastUserDefaults.current) {
         let credentialStore = CredentialStore()
@@ -83,6 +84,9 @@ struct DashboardView: View {
         .task {
             await refreshConversions(for: store.cards)
         }
+        .task(id: preferences.autoRefreshInterval) {
+            await runAutoRefreshLoop(for: preferences.autoRefreshInterval)
+        }
         .sheet(item: $formPresentation) { presentation in
             BillingCardFormView(card: presentation.card, displayOrder: store.cards.count, credentialStore: credentialStore) { card in
                 if presentation.card == nil {
@@ -131,11 +135,19 @@ struct DashboardView: View {
         )
     }
 
+    private var autoRefreshIntervalBinding: Binding<AutoRefreshInterval> {
+        Binding(
+            get: { preferences.autoRefreshInterval },
+            set: { setAutoRefreshInterval($0) }
+        )
+    }
+
     private var toolbarActions: some View {
         HStack(spacing: 8) {
             sortPicker
             saveCustomOrderButton
             viewModePicker
+            autoRefreshPicker
             refreshAllButton
             addCardButton
         }
@@ -178,6 +190,26 @@ struct DashboardView: View {
         .frame(width: 152)
         .help("Switch dashboard view.")
         .disabled(store.cards.isEmpty)
+    }
+
+    private var autoRefreshPicker: some View {
+        HStack(spacing: 6) {
+            Text("Auto")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            Picker("Auto Refresh", selection: autoRefreshIntervalBinding) {
+                ForEach(AutoRefreshInterval.allCases) { interval in
+                    Text(interval.displayName)
+                        .tag(interval)
+                }
+            }
+            .pickerStyle(.menu)
+            .frame(width: 66)
+        }
+        .frame(width: 112)
+        .disabled(store.cards.isEmpty)
+        .help("Auto Refresh")
     }
 
     private var refreshAllButton: some View {
@@ -359,6 +391,11 @@ struct DashboardView: View {
         DashboardPreferencesStore.save(preferences, userDefaults: userDefaults)
     }
 
+    private func setAutoRefreshInterval(_ interval: AutoRefreshInterval) {
+        preferences.autoRefreshInterval = interval
+        DashboardPreferencesStore.save(preferences, userDefaults: userDefaults)
+    }
+
     private func saveAsCustomOrder() {
         let currentOrder = sortedUnpinnedCards
         withAnimation {
@@ -397,24 +434,83 @@ struct DashboardView: View {
             return
         }
 
-        isRefreshingAll = true
-        refreshingCardIDs = Set(cards.map(\.id))
-
         Task {
-            for card in cards {
-                await refreshBilling(for: card)
+            _ = await refreshAllCards(cards)
+        }
+    }
+
+    private var autoRefreshableCards: [BillingCard] {
+        store.cards.filter(\.canAutoRefresh)
+    }
+
+    private func refreshAllCards(_ cards: [BillingCard]) async -> Bool {
+        guard !cards.isEmpty, !isRefreshingAll else {
+            return false
+        }
+
+        let cardIDs = Set(cards.map(\.id))
+        isRefreshingAll = true
+        refreshingCardIDs.formUnion(cardIDs)
+
+        for card in cards {
+            await refreshBilling(for: card)
+        }
+
+        let updatedCards = store.cards.filter { cardIDs.contains($0.id) }
+        await refreshConversions(for: updatedCards)
+
+        refreshingCardIDs.subtract(cardIDs)
+        isRefreshingAll = false
+        lastRefreshAllAt = Date()
+        return true
+    }
+
+    private func runAutoRefreshLoop(for interval: AutoRefreshInterval) async {
+        guard let seconds = interval.seconds else {
+            return
+        }
+
+        while !Task.isCancelled {
+            let delay = autoRefreshDelay(for: seconds)
+            if delay > 0 {
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                } catch {
+                    return
+                }
             }
 
-            let updatedCards = await MainActor.run {
-                store.cards
+            guard !Task.isCancelled else {
+                return
             }
-            await refreshConversions(for: updatedCards)
 
-            await MainActor.run {
-                refreshingCardIDs.removeAll()
-                isRefreshingAll = false
+            let cards = autoRefreshableCards
+            if cards.isEmpty {
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                } catch {
+                    return
+                }
+                continue
+            }
+
+            let didRefresh = await refreshAllCards(cards)
+            if !didRefresh {
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                } catch {
+                    return
+                }
             }
         }
+    }
+
+    private func autoRefreshDelay(for seconds: TimeInterval) -> TimeInterval {
+        guard let lastRefreshAllAt else {
+            return 0
+        }
+
+        return max(0, seconds - Date().timeIntervalSince(lastRefreshAllAt))
     }
 
     private func refreshBilling(for card: BillingCard) async {
@@ -603,5 +699,20 @@ private extension BillingService {
         BillingServiceGroup.allCases.firstIndex { group in
             group.services.contains(self)
         } ?? BillingServiceGroup.allCases.count
+    }
+}
+
+private extension BillingCard {
+    var canAutoRefresh: Bool {
+        guard sourceType == .apiUsage else {
+            return false
+        }
+
+        switch service {
+        case .aws, .gcp, .azure, .cloudflare, .laravelCloud, .openAiApi, .openAiCodex, .deepLApi:
+            return true
+        case .githubCopilot, .openAiChatGpt, .claude, .claudeCode, .deepl, .adobeCreativeCloud, .dropbox, .youtube, .netflix, .disneyPlus, .appleTvPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword, .pixiv, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual:
+            return false
+        }
     }
 }
