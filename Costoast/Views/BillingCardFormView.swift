@@ -669,7 +669,7 @@ struct BillingCardFormView: View {
         }
 
         do {
-            guard let credentials = try credentialStore.loadCredentials(for: card.id) else {
+            guard let credentials = try credentialStore.loadCredentialsForDisplay(cardID: card.id) else {
                 return
             }
 

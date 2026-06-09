@@ -602,7 +602,7 @@ struct DashboardView: View {
 
     private func refreshBilling(for card: BillingCard) async {
         do {
-            let credentials = try credentialStore.loadCredentials(for: card.id)
+            let credentials = try credentialStore.loadCredentialsForRefresh(cardID: card.id)
             let provider = providerRegistry.provider(for: card)
             let result = try await provider.fetchBilling(for: card, credentials: credentials)
             await MainActor.run {

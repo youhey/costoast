@@ -59,3 +59,10 @@ Not implemented yet:
 - Detailed UI/UX adjustments for the dashboard.
 
 Credentials such as OpenAI API keys, AWS secret access keys, GCP Service Account JSON, Azure client secrets, Cloudflare API tokens, Laravel Cloud API tokens, and DeepL API keys are not stored in UserDefaults or JSON card settings.
+
+Credential storage notes:
+
+- Secrets are stored as generic password items in macOS Keychain with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`.
+- Refresh and Auto Refresh read credentials without `kSecUseOperationPrompt` or biometric/user-presence access control.
+- Credentials loaded during the current app session are cached in memory to reduce repeated Keychain reads during Refresh and Auto Refresh.
+- Editing a card loads credentials through a display-specific path so future UI-only authentication policy can be separated from background refresh behavior.

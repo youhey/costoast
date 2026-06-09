@@ -29,6 +29,8 @@ final class CredentialStore {
     private let service = "youhey.Costoast.billingCredentials"
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private let cacheLock = NSLock()
+    private var credentialsCache: [UUID: CachedCredentials] = [:]
 
     func saveCredentials(_ credentials: BillingCredentials, for cardID: UUID) throws {
         if credentials.isEmpty {
@@ -43,11 +45,12 @@ final class CredentialStore {
         let query = baseQuery(for: cardID)
         let attributes: [String: Any] = [
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
 
         let updateStatus = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
         if updateStatus == errSecSuccess {
+            setCached(.credentials(credentials), for: cardID)
             return
         }
 
@@ -61,9 +64,44 @@ final class CredentialStore {
         guard addStatus == errSecSuccess else {
             throw CredentialStoreError.keychain(addStatus)
         }
+        setCached(.credentials(credentials), for: cardID)
     }
 
     func loadCredentials(for cardID: UUID) throws -> BillingCredentials? {
+        try loadCredentialsForRefresh(cardID: cardID)
+    }
+
+    func loadCredentialsForRefresh(cardID: UUID) throws -> BillingCredentials? {
+        if let cached = cachedCredentials(for: cardID) {
+            return cached.value
+        }
+
+        let credentials = try loadCredentialsFromKeychain(for: cardID)
+        setCached(credentials.map(CachedCredentials.credentials) ?? .missing, for: cardID)
+        return credentials
+    }
+
+    func loadCredentialsForDisplay(cardID: UUID) throws -> BillingCredentials? {
+        let credentials = try loadCredentialsFromKeychain(for: cardID)
+        setCached(credentials.map(CachedCredentials.credentials) ?? .missing, for: cardID)
+        return credentials
+    }
+
+    func preloadCredentials(for cardIDs: [UUID]) {
+        for cardID in cardIDs where cachedCredentials(for: cardID) == nil {
+            do {
+                guard let credentials = try loadCredentialsFromKeychain(for: cardID) else {
+                    setCached(.missing, for: cardID)
+                    continue
+                }
+                setCached(.credentials(credentials), for: cardID)
+            } catch {
+                continue
+            }
+        }
+    }
+
+    private func loadCredentialsFromKeychain(for cardID: UUID) throws -> BillingCredentials? {
         var query = baseQuery(for: cardID)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -93,6 +131,7 @@ final class CredentialStore {
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw CredentialStoreError.keychain(status)
         }
+        removeCachedCredentials(for: cardID)
     }
 
     private func baseQuery(for cardID: UUID) -> [String: Any] {
@@ -101,5 +140,37 @@ final class CredentialStore {
             kSecAttrService as String: service,
             kSecAttrAccount as String: cardID.uuidString
         ]
+    }
+
+    private func cachedCredentials(for cardID: UUID) -> CachedCredentials? {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        return credentialsCache[cardID]
+    }
+
+    private func setCached(_ cachedCredentials: CachedCredentials, for cardID: UUID) {
+        cacheLock.lock()
+        credentialsCache[cardID] = cachedCredentials
+        cacheLock.unlock()
+    }
+
+    private func removeCachedCredentials(for cardID: UUID) {
+        cacheLock.lock()
+        credentialsCache.removeValue(forKey: cardID)
+        cacheLock.unlock()
+    }
+}
+
+private enum CachedCredentials {
+    case credentials(BillingCredentials)
+    case missing
+
+    var value: BillingCredentials? {
+        switch self {
+        case .credentials(let credentials):
+            credentials
+        case .missing:
+            nil
+        }
     }
 }
