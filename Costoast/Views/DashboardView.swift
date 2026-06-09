@@ -57,6 +57,8 @@ struct DashboardView: View {
                 }
             }
 
+            sortControls
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if store.cards.isEmpty {
@@ -144,14 +146,29 @@ struct DashboardView: View {
 
     private var toolbarActions: some View {
         HStack(spacing: 8) {
-            sortPicker
-            saveCustomOrderButton
             viewModePicker
             refreshAllButton
             autoRefreshPicker
             addCardButton
         }
         .fixedSize()
+    }
+
+    @ViewBuilder
+    private var sortControls: some View {
+        if preferences.viewMode == .cards && !store.cards.isEmpty {
+            HStack(spacing: 8) {
+                Text("Sort")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                sortPicker
+                saveCustomOrderButton
+
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private var sortPicker: some View {
@@ -161,6 +178,7 @@ struct DashboardView: View {
                     .tag(sortMode)
             }
         }
+        .labelsHidden()
         .pickerStyle(.menu)
         .frame(width: 136)
         .help(sortModeHelpText)
