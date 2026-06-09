@@ -631,6 +631,7 @@ struct BillingCardFormView: View {
             service: service,
             sourceType: sourceType,
             displayOrder: card?.displayOrder ?? displayOrder,
+            pinnedAt: card?.pinnedAt,
             planName: savesPlanDetails && !trimmedPlanName.isEmpty ? trimmedPlanName : nil,
             currency: currency,
             amount: savesAmountDetails ? parsedAmount : nil,

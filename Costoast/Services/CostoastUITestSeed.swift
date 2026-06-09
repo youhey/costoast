@@ -61,6 +61,7 @@ enum CostoastUITestSeed {
             service: service,
             sourceType: .apiUsage,
             displayOrder: displayOrder,
+            pinnedAt: nil,
             planName: nil,
             currency: .jpy,
             amount: amount,

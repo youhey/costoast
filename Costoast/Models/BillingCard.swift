@@ -13,6 +13,7 @@ struct BillingCard: Identifiable, Codable, Equatable {
     var service: BillingService
     var sourceType: BillingSourceType
     var displayOrder: Int
+    var pinnedAt: Date?
 
     var planName: String?
     var currency: CurrencyCode

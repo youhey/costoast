@@ -48,6 +48,14 @@ struct DashboardView: View {
 
             DottedSeparator()
 
+            if preferences.viewMode == .cards && !pinnedCards.isEmpty {
+                pinnedCardList
+
+                if !sortedUnpinnedCards.isEmpty {
+                    DottedSeparator(color: .gray.opacity(0.55))
+                }
+            }
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if store.cards.isEmpty {
@@ -197,8 +205,8 @@ struct DashboardView: View {
 
     @ViewBuilder
     private var billingCardList: some View {
-        let cards = sortedCards
-        let amountColumnWidths = BillingCardAmountColumnWidths.cards(for: cards)
+        let cards = sortedUnpinnedCards
+        let amountColumnWidths = BillingCardAmountColumnWidths.cards(for: orderedCards)
 
         ForEach(cards) { card in
             billingCardRow(for: card, amountColumnWidths: amountColumnWidths)
@@ -210,8 +218,19 @@ struct DashboardView: View {
     }
 
     @ViewBuilder
+    private var pinnedCardList: some View {
+        let amountColumnWidths = BillingCardAmountColumnWidths.cards(for: orderedCards)
+
+        VStack(alignment: .leading, spacing: 16) {
+            ForEach(pinnedCards) { card in
+                billingCardRow(for: card, amountColumnWidths: amountColumnWidths)
+            }
+        }
+    }
+
+    @ViewBuilder
     private var compactCardList: some View {
-        let cards = sortedCards
+        let cards = orderedCards
         let amountColumnWidths = BillingCardAmountColumnWidths.compact(for: cards)
 
         VStack(alignment: .leading, spacing: 0) {
@@ -221,12 +240,22 @@ struct DashboardView: View {
         }
     }
 
-    private var sortedCards: [BillingCard] {
-        sortedCards(from: store.cards, mode: preferences.sortMode)
+    private var orderedCards: [BillingCard] {
+        pinnedCards + sortedUnpinnedCards
+    }
+
+    private var pinnedCards: [BillingCard] {
+        store.cards
+            .filter { $0.isPinned }
+            .sorted(by: pinnedOrder)
+    }
+
+    private var sortedUnpinnedCards: [BillingCard] {
+        sortedCards(from: store.cards.filter { !$0.isPinned }, mode: preferences.sortMode)
     }
 
     private var canSaveAsCustomOrder: Bool {
-        !store.cards.isEmpty && preferences.sortMode != .custom
+        !sortedUnpinnedCards.isEmpty && preferences.sortMode != .custom
     }
 
     private var sortModeHelpText: String {
@@ -243,8 +272,12 @@ struct DashboardView: View {
             card: card,
             amountColumnWidths: amountColumnWidths,
             isRefreshing: refreshingCardIDs.contains(card.id),
+            isPinned: card.isPinned,
             canMoveUp: canMoveUp(card),
             canMoveDown: canMoveDown(card),
+            onTogglePinned: {
+                togglePinned(card)
+            },
             onMoveUp: {
                 moveCard(card, by: -1)
             },
@@ -264,7 +297,8 @@ struct DashboardView: View {
     }
 
     private func canMoveUp(_ card: BillingCard) -> Bool {
-        guard let index = sortedCards.firstIndex(where: { $0.id == card.id }) else {
+        guard !card.isPinned,
+              let index = sortedUnpinnedCards.firstIndex(where: { $0.id == card.id }) else {
             return false
         }
 
@@ -272,15 +306,20 @@ struct DashboardView: View {
     }
 
     private func canMoveDown(_ card: BillingCard) -> Bool {
-        guard let index = sortedCards.firstIndex(where: { $0.id == card.id }) else {
+        guard !card.isPinned,
+              let index = sortedUnpinnedCards.firstIndex(where: { $0.id == card.id }) else {
             return false
         }
 
-        return index < sortedCards.count - 1
+        return index < sortedUnpinnedCards.count - 1
     }
 
     private func moveCard(_ card: BillingCard, by offset: Int) {
-        var currentOrder = sortedCards
+        guard !card.isPinned else {
+            return
+        }
+
+        var currentOrder = sortedUnpinnedCards
         guard
             let sourceIndex = currentOrder.firstIndex(where: { $0.id == card.id }),
             currentOrder.indices.contains(sourceIndex + offset)
@@ -293,6 +332,12 @@ struct DashboardView: View {
         withAnimation {
             store.saveCustomOrder(currentOrder)
             setSortMode(.custom)
+        }
+    }
+
+    private func togglePinned(_ card: BillingCard) {
+        withAnimation {
+            store.setPinned(!card.isPinned, for: card.id)
         }
     }
 
@@ -315,7 +360,7 @@ struct DashboardView: View {
     }
 
     private func saveAsCustomOrder() {
-        let currentOrder = sortedCards
+        let currentOrder = sortedUnpinnedCards
         withAnimation {
             store.saveCustomOrder(currentOrder)
             setSortMode(.custom)
@@ -438,6 +483,8 @@ struct DashboardView: View {
 }
 
 private struct DottedSeparator: View {
+    var color: Color = .pink.opacity(0.65)
+
     var body: some View {
         Rectangle()
             .fill(.clear)
@@ -449,7 +496,7 @@ private struct DottedSeparator: View {
                         path.addLine(to: CGPoint(x: geometry.size.width, y: 0))
                     }
                     .stroke(
-                        Color.pink.opacity(0.65),
+                        color,
                         style: StrokeStyle(
                             lineWidth: 1.5,
                             lineCap: .round,
@@ -494,6 +541,22 @@ private extension DashboardView {
         }
 
         return lhs.displayOrder < rhs.displayOrder
+    }
+
+    func pinnedOrder(_ lhs: BillingCard, _ rhs: BillingCard) -> Bool {
+        switch (lhs.pinnedAt, rhs.pinnedAt) {
+        case let (lhsPinnedAt?, rhsPinnedAt?):
+            if lhsPinnedAt == rhsPinnedAt {
+                return customOrder(lhs, rhs)
+            }
+            return lhsPinnedAt < rhsPinnedAt
+        case (_?, nil):
+            return true
+        case (nil, _?):
+            return false
+        case (nil, nil):
+            return customOrder(lhs, rhs)
+        }
     }
 
     func nameOrder(_ lhs: BillingCard, _ rhs: BillingCard) -> Bool {

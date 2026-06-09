@@ -54,6 +54,7 @@ final class BillingCardStore: ObservableObject {
 
         var updatedCard = card
         updatedCard.displayOrder = cards[index].displayOrder
+        updatedCard.pinnedAt = cards[index].pinnedAt
         updatedCard.createdAt = cards[index].createdAt
         updatedCard.updatedAt = Date()
         cards[index] = updatedCard
@@ -124,6 +125,16 @@ final class BillingCardStore: ObservableObject {
             cards[index].updatedAt = Date()
         }
 
+        save()
+    }
+
+    func setPinned(_ isPinned: Bool, for cardID: UUID) {
+        guard let index = cards.firstIndex(where: { $0.id == cardID }) else {
+            return
+        }
+
+        cards[index].pinnedAt = isPinned ? Date() : nil
+        cards[index].updatedAt = Date()
         save()
     }
 

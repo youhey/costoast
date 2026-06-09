@@ -12,8 +12,10 @@ struct BillingCardRowView: View {
     let card: BillingCard
     let amountColumnWidths: BillingCardAmountColumnWidths
     let isRefreshing: Bool
+    let isPinned: Bool
     let canMoveUp: Bool
     let canMoveDown: Bool
+    let onTogglePinned: () -> Void
     let onMoveUp: () -> Void
     let onMoveDown: () -> Void
     let onRefresh: () -> Void
@@ -21,7 +23,8 @@ struct BillingCardRowView: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 18) {
+        HStack(alignment: .center, spacing: 12) {
+            pinButton
             logoView
 
             VStack(alignment: .leading, spacing: 10) {
@@ -99,6 +102,7 @@ struct BillingCardRowView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
+        .frame(height: Self.cardHeight, alignment: .center)
         .background(.background, in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
@@ -112,6 +116,20 @@ struct BillingCardRowView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("billing-card-row-\(card.id.uuidString)")
+    }
+
+    private var pinButton: some View {
+        Button(action: onTogglePinned) {
+            Image(systemName: isPinned ? "pin.fill" : "pin")
+                .font(.system(size: 15, weight: .semibold))
+                .frame(width: 24, height: 30)
+                .foregroundStyle(isPinned ? .yellow : .secondary)
+        }
+        .buttonStyle(.plain)
+        .opacity(isPinned ? 1 : 0.45)
+        .accessibilityLabel(isPinned ? "Unpin Card" : "Pin Card")
+        .accessibilityIdentifier("pin-card-\(card.id.uuidString)")
+        .help(isPinned ? "Unpin Card" : "Pin Card")
     }
 
     @ViewBuilder
@@ -142,21 +160,27 @@ struct BillingCardRowView: View {
         if isRefreshing {
             Text("Loading...")
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
         } else if let error = card.lastRefreshError {
             Text(error)
                 .foregroundStyle(.red)
+                .lineLimit(1)
         } else if let message = card.lastBillingResult?.message {
             Text(message)
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
         } else if card.sourceType == .apiUsage && card.lastBillingResult == nil {
             Text("Not configured")
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
         } else if (card.sourceType == .subscriptionPlan || card.sourceType == .manualAmount) && card.currentOriginalAmount == nil {
             Text("Amount not set")
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
         } else if card.currentOriginalAmount == nil {
             Text("Amount unavailable")
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
         }
     }
 
@@ -213,6 +237,7 @@ struct BillingCardRowView: View {
     }()
 
     private static let amountColumnSpacing: CGFloat = 8
+    private static let cardHeight: CGFloat = 118
 }
 
 struct BillingCardAmountColumnWidths {
@@ -250,6 +275,10 @@ struct BillingCardAmountColumnWidths {
 }
 
 extension BillingCard {
+    var isPinned: Bool {
+        pinnedAt != nil
+    }
+
     var monthlyEquivalentAmountDisplayText: String {
         guard let monthlyAmount = currentMonthlyEquivalentJPYAmount else {
             return "JPY unavailable"
@@ -419,6 +448,7 @@ extension BillingService {
             service: .openAiApi,
             sourceType: .apiUsage,
             displayOrder: 0,
+            pinnedAt: nil,
             planName: nil,
             currency: .jpy,
             amount: nil,
@@ -439,8 +469,10 @@ extension BillingService {
         ),
         amountColumnWidths: .cards(for: []),
         isRefreshing: false,
+        isPinned: false,
         canMoveUp: false,
         canMoveDown: true,
+        onTogglePinned: {},
         onMoveUp: {},
         onMoveDown: {},
         onRefresh: {},

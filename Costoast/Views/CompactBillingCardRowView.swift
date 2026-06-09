@@ -103,6 +103,7 @@ struct CompactBillingCardRowView: View {
                 service: .openAiApi,
                 sourceType: .apiUsage,
                 displayOrder: 0,
+                pinnedAt: nil,
                 planName: nil,
                 currency: .jpy,
                 amount: nil,
