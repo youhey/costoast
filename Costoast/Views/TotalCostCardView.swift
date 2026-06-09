@@ -9,13 +9,15 @@ import SwiftUI
 
 struct TotalCostCardView: View {
     let summary: TotalCostSummary
+    var titlePrefix: String?
+    var showsGroupTotals = true
 
     var body: some View {
         HStack(alignment: .center, spacing: 18) {
             symbolView
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("Total for \(Self.monthNameFormatter.string(from: Date()))")
+                Text(totalTitle)
                     .font(.headline)
 
                 HStack(alignment: .firstTextBaseline, spacing: 14) {
@@ -39,7 +41,11 @@ struct TotalCostCardView: View {
             .font(.body)
             .frame(width: 310, alignment: .leading)
 
-            groupTotalsView
+            if showsGroupTotals {
+                groupTotalsView
+            } else {
+                Spacer(minLength: 0)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
@@ -63,6 +69,15 @@ struct TotalCostCardView: View {
 
     private var summaryBackground: Color {
         Color(red: 0.18, green: 0.16, blue: 0.14)
+    }
+
+    private var totalTitle: String {
+        let title = "Total for \(Self.monthNameFormatter.string(from: Date()))"
+        guard let titlePrefix else {
+            return title
+        }
+
+        return "\(titlePrefix) \(title)"
     }
 
     private var groupTotalsView: some View {

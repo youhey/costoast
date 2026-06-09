@@ -44,7 +44,9 @@ struct DashboardView: View {
             }
 
             TotalCostCardView(
-                summary: totalCostCalculator.summarize(cards: store.cards)
+                summary: totalCostCalculator.summarize(cards: filteredCards),
+                titlePrefix: preferences.filterMode.summaryTitlePrefix,
+                showsGroupTotals: preferences.filterMode.showsSummaryGroupTotals
             )
 
             DottedSeparator()
@@ -140,6 +142,13 @@ struct DashboardView: View {
         )
     }
 
+    private var filterModeBinding: Binding<DashboardFilterMode> {
+        Binding(
+            get: { preferences.filterMode },
+            set: { setFilterMode($0) }
+        )
+    }
+
     private var autoRefreshIntervalBinding: Binding<AutoRefreshInterval> {
         Binding(
             get: { preferences.autoRefreshInterval },
@@ -163,6 +172,12 @@ struct DashboardView: View {
 
                 Spacer(minLength: 0)
 
+                Text("Filter")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                filterPicker
+
                 Text("Sort")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -172,6 +187,36 @@ struct DashboardView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var filterPicker: some View {
+        Picker("Filter", selection: filterModeBinding) {
+            Text(DashboardFilterMode.all.displayName)
+                .tag(DashboardFilterMode.all)
+            Divider()
+            Section("Source") {
+                Text(DashboardFilterMode.sourceAPIUsage.displayName)
+                    .tag(DashboardFilterMode.sourceAPIUsage)
+                Text(DashboardFilterMode.sourceSubscriptionPlan.displayName)
+                    .tag(DashboardFilterMode.sourceSubscriptionPlan)
+            }
+            Divider()
+            Section("Group") {
+                Text(DashboardFilterMode.groupCloudDev.displayName)
+                    .tag(DashboardFilterMode.groupCloudDev)
+                Text(DashboardFilterMode.groupEntertainment.displayName)
+                    .tag(DashboardFilterMode.groupEntertainment)
+                Text(DashboardFilterMode.groupLifestyle.displayName)
+                    .tag(DashboardFilterMode.groupLifestyle)
+                Text(DashboardFilterMode.groupShopping.displayName)
+                    .tag(DashboardFilterMode.groupShopping)
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .frame(width: 142)
+        .help("Filter billing cards.")
+        .disabled(store.cards.isEmpty)
     }
 
     private var sortPicker: some View {
@@ -305,18 +350,24 @@ struct DashboardView: View {
         pinnedCards + sortedUnpinnedCards
     }
 
+    private var filteredCards: [BillingCard] {
+        store.cards.filter { card in
+            preferences.filterMode.includes(card)
+        }
+    }
+
     private var pinnedCards: [BillingCard] {
-        store.cards
+        filteredCards
             .filter { $0.isPinned }
             .sorted(by: pinnedOrder)
     }
 
     private var sortedUnpinnedCards: [BillingCard] {
-        sortedCards(from: store.cards.filter { !$0.isPinned }, mode: preferences.sortMode)
+        sortedCards(from: filteredCards.filter { !$0.isPinned }, mode: preferences.sortMode)
     }
 
     private var canSaveAsCustomOrder: Bool {
-        !sortedUnpinnedCards.isEmpty && preferences.sortMode != .custom
+        preferences.filterMode == .all && !sortedUnpinnedCards.isEmpty && preferences.sortMode != .custom
     }
 
     private var sortModeHelpText: String {
@@ -358,7 +409,8 @@ struct DashboardView: View {
     }
 
     private func canMoveUp(_ card: BillingCard) -> Bool {
-        guard !card.isPinned,
+        guard preferences.filterMode == .all,
+              !card.isPinned,
               let index = sortedUnpinnedCards.firstIndex(where: { $0.id == card.id }) else {
             return false
         }
@@ -367,7 +419,8 @@ struct DashboardView: View {
     }
 
     private func canMoveDown(_ card: BillingCard) -> Bool {
-        guard !card.isPinned,
+        guard preferences.filterMode == .all,
+              !card.isPinned,
               let index = sortedUnpinnedCards.firstIndex(where: { $0.id == card.id }) else {
             return false
         }
@@ -376,7 +429,7 @@ struct DashboardView: View {
     }
 
     private func moveCard(_ card: BillingCard, by offset: Int) {
-        guard !card.isPinned else {
+        guard preferences.filterMode == .all, !card.isPinned else {
             return
         }
 
@@ -417,6 +470,11 @@ struct DashboardView: View {
 
     private func setViewMode(_ viewMode: DashboardViewMode) {
         preferences.viewMode = viewMode
+        DashboardPreferencesStore.save(preferences, userDefaults: userDefaults)
+    }
+
+    private func setFilterMode(_ filterMode: DashboardFilterMode) {
+        preferences.filterMode = filterMode
         DashboardPreferencesStore.save(preferences, userDefaults: userDefaults)
     }
 
@@ -638,6 +696,45 @@ private struct DottedSeparator: View {
 private struct BillingCardFormPresentation: Identifiable {
     let id = UUID()
     let card: BillingCard?
+}
+
+private extension DashboardFilterMode {
+    func includes(_ card: BillingCard) -> Bool {
+        switch self {
+        case .all:
+            true
+        case .sourceAPIUsage:
+            card.sourceType == .apiUsage
+        case .sourceSubscriptionPlan:
+            card.sourceType == .subscriptionPlan
+        case .groupCloudDev:
+            card.service.serviceGroup == .cloudDev
+        case .groupEntertainment:
+            card.service.serviceGroup == .entertainment
+        case .groupLifestyle:
+            card.service.serviceGroup == .lifestyle
+        case .groupShopping:
+            card.service.serviceGroup == .shopping
+        }
+    }
+
+    var summaryTitlePrefix: String? {
+        switch self {
+        case .groupCloudDev, .groupEntertainment, .groupLifestyle, .groupShopping:
+            displayName
+        case .all, .sourceAPIUsage, .sourceSubscriptionPlan:
+            nil
+        }
+    }
+
+    var showsSummaryGroupTotals: Bool {
+        switch self {
+        case .all, .sourceAPIUsage, .sourceSubscriptionPlan:
+            true
+        case .groupCloudDev, .groupEntertainment, .groupLifestyle, .groupShopping:
+            false
+        }
+    }
 }
 
 private extension DashboardView {

@@ -32,6 +32,37 @@ enum CardSortMode: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum DashboardFilterMode: String, Codable, CaseIterable, Identifiable {
+    case all
+    case sourceAPIUsage
+    case sourceSubscriptionPlan
+    case groupCloudDev
+    case groupEntertainment
+    case groupLifestyle
+    case groupShopping
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .all:
+            "All"
+        case .sourceAPIUsage:
+            "API Usage"
+        case .sourceSubscriptionPlan:
+            "Subscription"
+        case .groupCloudDev:
+            "Cloud/Dev"
+        case .groupEntertainment:
+            "Entertainment"
+        case .groupLifestyle:
+            "Lifestyle"
+        case .groupShopping:
+            "Shopping"
+        }
+    }
+}
+
 enum DashboardViewMode: String, Codable, CaseIterable, Identifiable {
     case cards
     case compact
@@ -95,15 +126,18 @@ enum AutoRefreshInterval: String, Codable, CaseIterable, Identifiable {
 
 struct DashboardPreferences: Codable, Equatable {
     var sortMode: CardSortMode = .custom
+    var filterMode: DashboardFilterMode = .all
     var viewMode: DashboardViewMode = .cards
     var autoRefreshInterval: AutoRefreshInterval = .off
 
     init(
         sortMode: CardSortMode = .custom,
+        filterMode: DashboardFilterMode = .all,
         viewMode: DashboardViewMode = .cards,
         autoRefreshInterval: AutoRefreshInterval = .off
     ) {
         self.sortMode = sortMode
+        self.filterMode = filterMode
         self.viewMode = viewMode
         self.autoRefreshInterval = autoRefreshInterval
     }
@@ -111,6 +145,7 @@ struct DashboardPreferences: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         sortMode = try container.decodeIfPresent(CardSortMode.self, forKey: .sortMode) ?? .custom
+        filterMode = try container.decodeIfPresent(DashboardFilterMode.self, forKey: .filterMode) ?? .all
         viewMode = try container.decodeIfPresent(DashboardViewMode.self, forKey: .viewMode) ?? .cards
         autoRefreshInterval = try container.decodeIfPresent(AutoRefreshInterval.self, forKey: .autoRefreshInterval) ?? .off
     }
