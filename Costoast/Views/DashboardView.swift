@@ -147,8 +147,8 @@ struct DashboardView: View {
             sortPicker
             saveCustomOrderButton
             viewModePicker
-            autoRefreshPicker
             refreshAllButton
+            autoRefreshPicker
             addCardButton
         }
         .fixedSize()
@@ -214,9 +214,17 @@ struct DashboardView: View {
 
     private var refreshAllButton: some View {
         Button(action: refreshAll) {
-            Label("Refresh All", systemImage: "arrow.clockwise")
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.clockwise")
+                    .rotationEffect(.degrees(isRefreshingAll ? 360 : 0))
+                    .animation(
+                        isRefreshingAll ? .linear(duration: 1).repeatForever(autoreverses: false) : .default,
+                        value: isRefreshingAll
+                    )
+
+                Text("Refresh All")
+            }
         }
-        .labelStyle(.titleAndIcon)
         .buttonStyle(.borderless)
         .frame(width: 112)
         .disabled(isRefreshingAll || store.cards.isEmpty)
