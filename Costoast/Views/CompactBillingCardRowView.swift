@@ -12,7 +12,7 @@ struct CompactBillingCardRowView: View {
     let amountColumnWidths: BillingCardAmountColumnWidths
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 8) {
             logoView
 
             Text(card.name)
@@ -20,7 +20,7 @@ struct CompactBillingCardRowView: View {
                 .fontWeight(.semibold)
                 .lineLimit(1)
 
-            Spacer(minLength: 16)
+            Spacer(minLength: 12)
 
             jpyAmountView
 
@@ -31,9 +31,9 @@ struct CompactBillingCardRowView: View {
                 .frame(width: amountColumnWidths.originalAmount, alignment: .trailing)
         }
         .font(.body)
-        .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color.primary.opacity(0.12))
@@ -53,11 +53,11 @@ struct CompactBillingCardRowView: View {
                     .scaledToFit()
             case .symbol(let systemName):
                 Image(systemName: systemName)
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: Self.logoSize, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
         }
-        .frame(width: 28, height: 28)
+        .frame(width: Self.logoSize, height: Self.logoSize)
         .accessibilityHidden(true)
     }
 
@@ -65,7 +65,8 @@ struct CompactBillingCardRowView: View {
     private var jpyAmountView: some View {
         HStack(alignment: .firstTextBaseline, spacing: Self.amountColumnSpacing) {
             Text(monthlyAmountText)
-                .font(.system(size: 17, weight: .semibold))
+                .font(.headline)
+                .fontWeight(.semibold)
                 .lineLimit(1)
                 .multilineTextAlignment(.trailing)
                 .frame(width: amountColumnWidths.monthlyAmount, alignment: .trailing)
@@ -91,7 +92,8 @@ struct CompactBillingCardRowView: View {
         card.preMonthlyEquivalentAmountDisplayText
     }
 
-    private static let amountColumnSpacing: CGFloat = 8
+    private static let amountColumnSpacing: CGFloat = 6
+    private static let logoSize: CGFloat = 16
 }
 
 #Preview {

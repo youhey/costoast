@@ -257,7 +257,7 @@ struct BillingCardAmountColumnWidths {
 
     static func compact(for cards: [BillingCard]) -> BillingCardAmountColumnWidths {
         BillingCardAmountColumnWidths(
-            monthlyAmount: width(for: cards.map(\.monthlyEquivalentAmountDisplayText), font: .systemFont(ofSize: 17, weight: .semibold)),
+            monthlyAmount: width(for: cards.map(\.monthlyEquivalentAmountDisplayText), font: .systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)),
             preMonthlyEquivalentAmount: width(for: cards.map(\.preMonthlyEquivalentAmountDisplayText), font: .systemFont(ofSize: NSFont.systemFontSize, weight: .regular)),
             originalAmount: width(for: cards.map(\.originalAmountDisplayText), font: .systemFont(ofSize: NSFont.systemFontSize, weight: .regular)),
             lastUpdated: 0

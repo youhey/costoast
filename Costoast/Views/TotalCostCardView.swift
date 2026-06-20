@@ -11,10 +11,13 @@ struct TotalCostCardView: View {
     let summary: TotalCostSummary
     var titlePrefix: String?
     var showsGroupTotals = true
+    var isCompact = false
 
     var body: some View {
-        HStack(alignment: .center, spacing: 18) {
-            symbolView
+        HStack(alignment: .center, spacing: isCompact ? 12 : 18) {
+            if !isCompact {
+                symbolView
+            }
 
             VStack(alignment: .leading, spacing: 10) {
                 Text(totalTitle)
@@ -48,7 +51,7 @@ struct TotalCostCardView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
+        .padding(isCompact ? 14 : 18)
         .background(summaryBackground, in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)

@@ -46,7 +46,8 @@ struct DashboardView: View {
             TotalCostCardView(
                 summary: totalCostCalculator.summarize(cards: filteredCards),
                 titlePrefix: preferences.filterMode.summaryTitlePrefix,
-                showsGroupTotals: preferences.filterMode.showsSummaryGroupTotals
+                showsGroupTotals: preferences.filterMode.showsSummaryGroupTotals,
+                isCompact: preferences.viewMode == .compact
             )
 
             DottedSeparator()
