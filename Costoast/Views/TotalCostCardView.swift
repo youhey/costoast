@@ -25,7 +25,8 @@ struct TotalCostCardView: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 14) {
                     Text(BillingCardFormat.jpy(summary.totalJPY))
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(isCompact ? .body : .system(size: 20, weight: .semibold))
+                        .fontWeight(.semibold)
 
                     if summary.activeCardCount == 0 {
                         Text("No billing cards yet.")
@@ -42,7 +43,7 @@ struct TotalCostCardView: View {
                 }
             }
             .font(.body)
-            .frame(width: 310, alignment: .leading)
+            .frame(width: isCompact ? 200 : 310, alignment: .leading)
 
             if showsGroupTotals {
                 groupTotalsView
