@@ -99,10 +99,10 @@ struct TotalCostCardView: View {
     }
 
     private func groupTotalBadge(for group: BillingServiceGroup) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 4) {
             Text(group.displayName)
                 .lineLimit(1)
-            Spacer(minLength: 8)
+            Spacer(minLength: 4)
             Text(BillingCardFormat.jpy(summary.groupTotalsJPY[group] ?? .zero))
                 .fontWeight(.semibold)
                 .lineLimit(1)
