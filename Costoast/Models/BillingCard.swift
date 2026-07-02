@@ -28,6 +28,8 @@ struct BillingCard: Identifiable, Codable, Equatable {
     var openAICodexConfiguration: OpenAICodexBillingConfiguration?
     var deepLAPIConfiguration: DeepLAPIBillingConfiguration?
 
+    var minimumRefreshInterval: BillingCardRefreshInterval?
+    var lastRefreshAttemptedAt: Date?
     var lastBillingResult: BillingProviderResult?
     var lastRefreshError: String?
     var lastConvertedAmount: ConvertedAmount?
@@ -35,6 +37,51 @@ struct BillingCard: Identifiable, Codable, Equatable {
 
     var createdAt: Date
     var updatedAt: Date
+}
+
+enum BillingCardRefreshInterval: String, Codable, CaseIterable, Identifiable {
+    case manualOnly
+    case sixHours
+    case twelveHours
+    case oneDay
+    case threeDays
+    case oneWeek
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .manualOnly:
+            "Manual only"
+        case .sixHours:
+            "6 h"
+        case .twelveHours:
+            "12 h"
+        case .oneDay:
+            "1 d"
+        case .threeDays:
+            "3 d"
+        case .oneWeek:
+            "1 w"
+        }
+    }
+
+    var seconds: TimeInterval? {
+        switch self {
+        case .manualOnly:
+            nil
+        case .sixHours:
+            6 * 60 * 60
+        case .twelveHours:
+            12 * 60 * 60
+        case .oneDay:
+            24 * 60 * 60
+        case .threeDays:
+            3 * 24 * 60 * 60
+        case .oneWeek:
+            7 * 24 * 60 * 60
+        }
+    }
 }
 
 struct GCPBillingConfiguration: Codable, Equatable {

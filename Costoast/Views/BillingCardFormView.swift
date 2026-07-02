@@ -20,6 +20,7 @@ struct BillingCardFormView: View {
     @State private var nameIsSuggested: Bool
     @State private var service: BillingService?
     @State private var sourceType: BillingSourceType?
+    @State private var minimumRefreshInterval: BillingCardRefreshInterval?
     @State private var selectedPlanPresetID: String?
     @State private var planName: String
     @State private var currency: CurrencyCode
@@ -74,6 +75,7 @@ struct BillingCardFormView: View {
         _nameIsSuggested = State(initialValue: false)
         _service = State(initialValue: card?.service)
         _sourceType = State(initialValue: Self.initialSourceType(for: card))
+        _minimumRefreshInterval = State(initialValue: card?.minimumRefreshInterval)
         _selectedPlanPresetID = State(initialValue: Self.initialPlanPresetID(for: card))
         _planName = State(initialValue: card?.planName ?? "")
         _currency = State(initialValue: card?.currency ?? .jpy)
@@ -141,6 +143,16 @@ struct BillingCardFormView: View {
                         Divider()
                         ForEach(Self.supportedSourceTypes(for: service)) { sourceType in
                             Text(sourceType.displayName).tag(Optional(sourceType))
+                        }
+                    }
+                }
+
+                if sourceType == .apiUsage {
+                    Picker("Query Frequency", selection: $minimumRefreshInterval) {
+                        Text("Auto default").tag(Optional<BillingCardRefreshInterval>.none)
+                        Divider()
+                        ForEach(BillingCardRefreshInterval.allCases) { interval in
+                            Text(interval.displayName).tag(Optional(interval))
                         }
                     }
                 }
@@ -643,6 +655,8 @@ struct BillingCardFormView: View {
             laravelCloudConfiguration: laravelCloudConfiguration,
             openAICodexConfiguration: openAICodexConfiguration,
             deepLAPIConfiguration: deepLAPIConfiguration,
+            minimumRefreshInterval: sourceType == .apiUsage ? minimumRefreshInterval : nil,
+            lastRefreshAttemptedAt: card?.lastRefreshAttemptedAt,
             lastBillingResult: card?.lastBillingResult,
             lastRefreshError: card?.lastRefreshError,
             lastConvertedAmount: card?.lastConvertedAmount,
@@ -701,20 +715,27 @@ struct BillingCardFormView: View {
 
         if Self.defaultsToSubscriptionPlan(selectedService) {
             sourceType = .subscriptionPlan
+            minimumRefreshInterval = nil
             resetPlanFields()
             return
         }
 
         if Self.requiresManualAmount(selectedService) {
             sourceType = .manualAmount
+            minimumRefreshInterval = nil
             resetPlanFields()
             return
         }
 
         if !Self.allowsSourceTypeSelection(previousService) {
             sourceType = nil
+            minimumRefreshInterval = nil
             resetPlanFields()
             return
+        }
+
+        if sourceType != .apiUsage {
+            minimumRefreshInterval = nil
         }
     }
 

@@ -527,8 +527,8 @@ struct DashboardView: View {
         }
     }
 
-    private var autoRefreshableCards: [BillingCard] {
-        store.cards.filter(\.canAutoRefresh)
+    private func autoRefreshableCards(at date: Date = Date()) -> [BillingCard] {
+        store.cards.filter { $0.shouldAutoRefresh(at: date) }
     }
 
     private func refreshAllCards(_ cards: [BillingCard]) async -> Bool {
@@ -572,7 +572,7 @@ struct DashboardView: View {
                 return
             }
 
-            let cards = autoRefreshableCards
+            let cards = autoRefreshableCards(at: Date())
             if cards.isEmpty {
                 do {
                     try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
@@ -841,5 +841,25 @@ private extension BillingCard {
         case .githubCopilot, .openAiChatGpt, .claude, .claudeCode, .deepl, .adobeCreativeCloud, .dropbox, .youtube, .netflix, .disneyPlus, .appleTvPlus, .appleMusic, .appleArcade, .iTunesMatch, .hulu, .amazon, .niconicoPremium, .abema, .dAnimeStore, .dmmTv, .uNext, .dazn, .spotifyPremium, .nintendoSwitchOnline, .playStationPlus, .xboxGamePass, .kindleUnlimited, .audible, .appleOne, .appleFitnessPlus, .iCloudPlus, .googleOne, .microsoft365, .onePassword, .pixiv, .amazonShopping, .yodobashi, .yahooShopping, .mercari, .manual:
             return false
         }
+    }
+
+    func shouldAutoRefresh(at date: Date) -> Bool {
+        guard canAutoRefresh else {
+            return false
+        }
+
+        guard let minimumRefreshInterval else {
+            return true
+        }
+
+        guard let seconds = minimumRefreshInterval.seconds else {
+            return false
+        }
+
+        guard let lastRefreshAttemptedAt = lastRefreshAttemptedAt ?? lastBillingResult?.fetchedAt else {
+            return true
+        }
+
+        return date.timeIntervalSince(lastRefreshAttemptedAt) >= seconds
     }
 }

@@ -31,7 +31,7 @@ Implemented:
 - Switch between Cards View and Compact View for the billing card list.
 - Sort billing cards by Custom Order, Name, Service Group, Amount High to Low, or Amount Low to High.
 - Pin important cards above the scrollable card list in Cards View.
-- Auto refresh API-backed cards on a selectable interval.
+- Auto refresh API-backed cards on a selectable interval, with optional per-card minimum query intervals.
 - Rearrange cards with up and down controls on each card.
 - Save the current sorted order as the new Custom Order with `Save as Custom Order`.
 - Fetch FX rates from an external no-key exchange rate API.

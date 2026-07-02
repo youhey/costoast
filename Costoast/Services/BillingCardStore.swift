@@ -83,6 +83,7 @@ final class BillingCardStore: ObservableObject {
             return
         }
 
+        cards[index].lastRefreshAttemptedAt = result.fetchedAt
         cards[index].lastBillingResult = result
         cards[index].lastRefreshError = nil
         cards[index].updatedAt = Date()
@@ -94,6 +95,7 @@ final class BillingCardStore: ObservableObject {
             return
         }
 
+        cards[index].lastRefreshAttemptedAt = Date()
         cards[index].lastRefreshError = errorMessage
         cards[index].updatedAt = Date()
         save()
